@@ -18,7 +18,13 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const content = e.target.result;
+                    // Convert the binary string to a Uint8Array
+                    const uint8Array = new Uint8Array(e.target.result);
+                    
+                    // Decode the Uint8Array using SHIFT_JIS encoding
+                    const decoder = new TextDecoder('shift_jis');
+                    const content = decoder.decode(uint8Array);
+
                     const firstLine = content.split('\n')[0];
                     
                     // Extract encoding from the first line
@@ -32,7 +38,7 @@
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(content, "text/xml");
                 };
-                reader.readAsText(file);
+                reader.readAsArrayBuffer(file);
             }
         });
     </script>
