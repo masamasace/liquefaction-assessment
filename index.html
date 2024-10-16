@@ -15,6 +15,7 @@
             <tr>
                 <th>標準貫入試験_開始深度</th>
                 <th>標準貫入試験_合計打撃回数</th>
+                <th>2N</th>
             </tr>
         </thead>
         <tbody>
@@ -47,9 +48,18 @@
                         const row = tableBody.insertRow();
                         const cell1 = row.insertCell(0);
                         const cell2 = row.insertCell(1);
+                        const cell3 = row.insertCell(2);
 
                         cell1.textContent = startDepth;
                         cell2.textContent = totalHits;
+                        cell2.contentEditable = true; // Make the cell editable
+                        cell3.textContent = totalHits * 2;
+
+                        // Add event listener to update 2N column when totalHits is edited
+                        cell2.addEventListener('input', function() {
+                            const newTotalHits = parseFloat(cell2.textContent) || 0;
+                            cell3.textContent = newTotalHits * 2;
+                        });
                     }
                 };
                 reader.readAsArrayBuffer(file);
