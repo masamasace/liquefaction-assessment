@@ -18,12 +18,19 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+                    const content = e.target.result;
+                    const firstLine = content.split('\n')[0];
                     
-                    // Process the XML data here
-                    // For example, display the XML content
-                    document.getElementById('output').textContent = e.target.result;
+                    // Extract encoding from the first line
+                    const encodingMatch = firstLine.match(/encoding="(.+?)"/);
+                    const encoding = encodingMatch ? encodingMatch[1] : 'unknown';
+
+                    // Display the encoding
+                    document.getElementById('output').textContent = `Encoding: ${encoding}`;
+                    
+                    // Process the XML data here if needed
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(content, "text/xml");
                 };
                 reader.readAsText(file);
             }
@@ -31,4 +38,3 @@
     </script>
 </body>
 </html>
-
