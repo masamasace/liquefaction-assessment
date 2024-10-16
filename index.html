@@ -9,8 +9,18 @@
     <!-- File input for selecting XML file -->
     <input type="file" id="fileInput" accept=".xml" />
 
-    <!-- Display the content of the XML file -->
-    <div id="output"></div>
+    <!-- Table to display the extracted data -->
+    <table id="dataTable" border="1">
+        <thead>
+            <tr>
+                <th>標準貫入試験_開始深度</th>
+                <th>標準貫入試験_合計打撃回数</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data rows will be inserted here -->
+        </tbody>
+    </table>
 
     <script>
         document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -18,25 +28,29 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // Convert the binary string to a Uint8Array
                     const uint8Array = new Uint8Array(e.target.result);
-                    
-                    // Decode the Uint8Array using SHIFT_JIS encoding
                     const decoder = new TextDecoder('shift_jis');
                     const content = decoder.decode(uint8Array);
 
-                    const firstLine = content.split('\n')[0];
-                    
-                    // Extract encoding from the first line
-                    const encodingMatch = firstLine.match(/encoding="(.+?)"/);
-                    const encoding = encodingMatch ? encodingMatch[1] : 'unknown';
-
-                    // Display the encoding
-                    document.getElementById('output').textContent = `Encoding: ${encoding}`;
-                    
-                    // Process the XML data here if needed
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(content, "text/xml");
+
+                    // Extract and display data
+                    const tests = xmlDoc.getElementsByTagName('標準貫入試験');
+                    const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+
+                    for (let i = 0; i < tests.length; i++) {
+                        const startDepth = tests[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent;
+                        const totalHits = tests[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
+
+                        const row = tableBody.insertRow();
+                        const cell1 = row.insertCell(0);
+                        const cell2 = row.insertCell(1);
+
+                        cell1.textContent = startDepth;
+                        cell2.textContent = totalHits;
+                    }
                 };
                 reader.readAsArrayBuffer(file);
             }
