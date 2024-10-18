@@ -1,1 +1,3 @@
+# Ignore all XML files, case-insensitive
+*.xml
 *.XML
