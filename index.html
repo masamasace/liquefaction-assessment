@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Import Borehole Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
 </head>
 <body>
     <!-- File input for selecting XML file -->
@@ -23,7 +24,43 @@
         </tbody>
     </table>
 
+    <!-- Canvas for the chart -->
+    <canvas id="depthChart" width="400" height="200"></canvas>
+
     <script>
+        const ctx = document.getElementById('depthChart').getContext('2d');
+        const chartData = {
+            labels: [],
+            datasets: [{
+                label: '2N vs Depth',
+                data: [],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                fill: false
+            }]
+        };
+
+        const depthChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Depth'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '2N'
+                        }
+                    }
+                }
+            }
+        });
+
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -41,6 +78,9 @@
                     const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
                     tableBody.innerHTML = ''; // Clear existing rows
 
+                    chartData.labels = [];
+                    chartData.datasets[0].data = [];
+
                     for (let i = 0; i < tests.length; i++) {
                         const startDepth = tests[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent;
                         const totalHits = tests[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
@@ -55,12 +95,19 @@
                         cell2.contentEditable = true; // Make the cell editable
                         cell3.textContent = totalHits * 2;
 
-                        // Add event listener to update 2N column when totalHits is edited
+                        // Update chart data
+                        chartData.labels.push(startDepth);
+                        chartData.datasets[0].data.push(totalHits * 2);
+
+                        // Add event listener to update 2N column and chart when totalHits is edited
                         cell2.addEventListener('input', function() {
                             const newTotalHits = parseFloat(cell2.textContent) || 0;
                             cell3.textContent = newTotalHits * 2;
+                            chartData.datasets[0].data[i] = newTotalHits * 2;
+                            depthChart.update();
                         });
                     }
+                    depthChart.update(); // Initial chart update
                 };
                 reader.readAsArrayBuffer(file);
             }
