@@ -4,114 +4,221 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Import Borehole Data</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+    <link href="https://unpkg.com/tabulator-tables@5.2.7/dist/css/tabulator.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/tabulator-tables@5.2.7/dist/js/tabulator.min.js"></script>
+    <style>
+        #tablesContainer, #chartsContainer {
+            display: flex;
+            margin: 20px;
+        }
+        #soilTable, #dataTable, #soilTypeChart, #SPTChart {
+            margin: 10px;
+            max-width: 400px;
+            max-height: 800px;
+        }
+        #soilTable, #dataTable {
+            height: 300px;
+            overflow-y: auto;
+        }
+        #dropZone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 20px;
+            cursor: pointer;
+        }
+        #dropZone.dragover {
+            border-color: #000;
+        }
+        canvas {
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
-    <!-- File input for selecting XML file -->
-    <input type="file" id="fileInput" accept=".xml" />
+    <div id="dropZone">Drag and drop XML file here or click to select</div>
+    <input type="file" id="fileInput" accept=".xml" style="display: none;" />
+    <button id="loadSampleData">Load Sample Data</button>
+    <button id="resetData">Reset</button>
 
-    <!-- Table to display the extracted data -->
-    <table id="dataTable" border="1">
-        <thead>
-            <tr>
-                <th>標準貫入試験_開始深度</th>
-                <th>標準貫入試験_合計打撃回数</th>
-                <th>2N</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Data rows will be inserted here -->
-        </tbody>
-    </table>
+    <div id="tablesContainer">
+        <div id="soilTable"></div>
+        <div id="dataTable"></div>
+    </div>
 
-    <!-- Canvas for the chart -->
-    <canvas id="depthChart" width="400" height="200"></canvas>
+    <div id="chartsContainer">
+        <canvas id="soilTypeChart" width="400" height="400"></canvas>
+        <canvas id="SPTChart" width="400" height="400"></canvas>
+    </div>
 
     <script>
-        const ctx = document.getElementById('depthChart').getContext('2d');
-        const chartData = {
-            labels: [],
-            datasets: [{
-                label: '2N vs Depth',
-                data: [],
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-                fill: false
-            }]
+        const ctxSoilType = document.getElementById('soilTypeChart').getContext('2d');
+        const ctxSPT = document.getElementById('SPTChart').getContext('2d');
+
+        const color_list = {
+            "Gravel": "rgba(75, 192, 192, 0.2)", 
+            "Sand": "rgba(255, 99, 132, 0.2)", 
+            "Silt": "rgba(255, 206, 86, 0.2)",
+            "Clay": "rgba(255, 236, 106, 0.2)"
         };
 
-        const depthChart = new Chart(ctx, {
-            type: 'line',
-            data: chartData,
+        const chartDataSoilType = { labels: [""], datasets: [] };
+        const chartDataSPT = { datasets: [{ label: 'Depth vs 2N', data: [], borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', borderWidth: 3, showLine: true, pointRadius: 0 }] };
+
+        const soilTypeChart = new Chart(ctxSoilType, {
+            type: 'bar',
+            data: chartDataSoilType,
             options: {
                 scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Depth'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: '2N'
-                        }
-                    }
-                }
+                    y: { beginAtZero: true, reverse: true, stacked: true, title: { display: true, text: 'Depth (m)', font: { size: 14 } } },
+                    x: { stacked: true, title: { display: true, text: 'Soil Type', font: { size: 14 } } }
+                },
+                plugins: { legend: { display: false } }
             }
         });
 
-        document.getElementById('fileInput').addEventListener('change', function(event) {
+        const SPTChart = new Chart(ctxSPT, {
+            type: 'scatter',
+            data: chartDataSPT,
+            options: {
+                scales: {
+                    x: { title: { display: true, text: '2N', font: { size: 14 } }, beginAtZero: true },
+                    y: { title: { display: true, text: 'Depth (m)', font: { size: 14 } }, reverse: true, beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const soilTable = new Tabulator("#soilTable", {
+            layout: "fitColumns",
+            height: "300px",
+            columns: [
+                {title: "上限<br>深度", field: "upperDepth", editor: "input", headerSort: false},
+                {title: "下限<br>深度", field: "lowerDepth", editor: "input", headerSort: false},
+                {title: "層厚", field: "layerThickness", editor: "input", headerSort: false},
+                {title: "土質<br>分類", field: "soilType", editor: "select", editorParams: { values: ["Gravel", "Sand", "Silt", "Clay"] }, headerSort: false}
+            ],
+            data: []
+        });
+
+        const boreholeTable = new Tabulator("#dataTable", {
+            layout: "fitColumns",
+            height: "300px",
+            columns: [
+                {title: "標準貫入試験_開始深度", field: "startDepth", editor: "input", headerSort: false},
+                {title: "標準貫入試験_合計打撃回数", field: "totalHits", editor: "input", headerSort: false},
+                {title: "2N", field: "twoN", headerSort: false}
+            ],
+            data: []
+        });
+
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('loadSampleData').addEventListener('click', loadSampleData);
+        document.getElementById('resetData').addEventListener('click', resetData);
+
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('click', () => document.getElementById('fileInput').click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+
+        function handleFileSelect(event) {
             const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const uint8Array = new Uint8Array(e.target.result);
-                    const decoder = new TextDecoder('shift_jis');
-                    const content = decoder.decode(uint8Array);
+            if (file) processFile(file);
+        }
 
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(content, "text/xml");
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = decodeFileContent(e.target.result);
+                const xmlDoc = parseXML(content);
+                updateTableAndChart(xmlDoc);
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
-                    // Extract and display data
-                    const tests = xmlDoc.getElementsByTagName('標準貫入試験');
-                    const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-                    tableBody.innerHTML = ''; // Clear existing rows
+        function decodeFileContent(arrayBuffer) {
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const decoder = new TextDecoder('shift_jis');
+            return decoder.decode(uint8Array);
+        }
 
-                    chartData.labels = [];
-                    chartData.datasets[0].data = [];
+        function parseXML(content) {
+            const parser = new DOMParser();
+            return parser.parseFromString(content, "text/xml");
+        }
 
-                    for (let i = 0; i < tests.length; i++) {
-                        const startDepth = tests[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent;
-                        const totalHits = tests[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
+        function updateTableAndChart(xmlDoc) {
+            const tests = xmlDoc.getElementsByTagName('標準貫入試験');
+            const data = [];
+            chartDataSPT.datasets[0].data = [];
 
-                        const row = tableBody.insertRow();
-                        const cell1 = row.insertCell(0);
-                        const cell2 = row.insertCell(1);
-                        const cell3 = row.insertCell(2);
+            for (let i = 0; i < tests.length; i++) {
+                const startDepth = tests[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent;
+                const totalHits = tests[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
+                const twoN = totalHits * 2;
 
-                        cell1.textContent = startDepth;
-                        cell2.textContent = totalHits;
-                        cell2.contentEditable = true; // Make the cell editable
-                        cell3.textContent = totalHits * 2;
-
-                        // Update chart data
-                        chartData.labels.push(startDepth);
-                        chartData.datasets[0].data.push(totalHits * 2);
-
-                        // Add event listener to update 2N column and chart when totalHits is edited
-                        cell2.addEventListener('input', function() {
-                            const newTotalHits = parseFloat(cell2.textContent) || 0;
-                            cell3.textContent = newTotalHits * 2;
-                            chartData.datasets[0].data[i] = newTotalHits * 2;
-                            depthChart.update();
-                        });
-                    }
-                    depthChart.update(); // Initial chart update
-                };
-                reader.readAsArrayBuffer(file);
+                data.push({startDepth, totalHits, twoN});
+                chartDataSPT.datasets[0].data.push({x: twoN, y: startDepth});
             }
-        });
+
+            boreholeTable.setData(data);
+            SPTChart.update();
+        }
+
+        function loadSampleData() {
+            const sampleBoreholeData = [
+                {startDepth: '1', totalHits: '1', twoN: 2},
+                {startDepth: '2', totalHits: '2', twoN: 4},
+                {startDepth: '3', totalHits: '5', twoN: 10},
+                {startDepth: '4', totalHits: '8', twoN: 16},
+                {startDepth: '5', totalHits: '3', twoN: 6},
+                {startDepth: '6', totalHits: '4', twoN: 8},
+                {startDepth: '7', totalHits: '8', twoN: 16},
+                {startDepth: '8', totalHits: '10', twoN: 20},
+                {startDepth: '9', totalHits: '12', twoN: 24},
+                {startDepth: '10', totalHits: '15', twoN: 30}
+            ];
+
+            const sampleSoilData = [
+                {upperDepth: "0", lowerDepth: "3", layerThickness: 3, soilType: "Gravel"},
+                {upperDepth: "3", lowerDepth: "5", layerThickness: 2, soilType: "Sand"},
+                {upperDepth: "5", lowerDepth: "10", layerThickness: 5, soilType: "Silt"},
+            ];
+
+            boreholeTable.setData(sampleBoreholeData);
+            soilTable.setData(sampleSoilData);
+
+            chartDataSPT.datasets[0].data = sampleBoreholeData.map(d => ({x: d.twoN, y: d.startDepth}));
+            SPTChart.update();
+
+            const sampleSoilDatasetsForChart = sampleSoilData.map(data => ({
+                label: data.soilType,
+                data: [data.layerThickness],
+                backgroundColor: [color_list[data.soilType]]
+            }));
+
+            chartDataSoilType.datasets = sampleSoilDatasetsForChart;
+            soilTypeChart.update();
+        }
+
+        function resetData() {
+            boreholeTable.clearData();
+            soilTable.clearData();
+            chartDataSPT.datasets[0].data = [];
+            SPTChart.update();
+        }
+
+        window.onload = loadSampleData;
     </script>
 </body>
 </html>

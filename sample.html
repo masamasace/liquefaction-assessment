@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacked Bar Chart with Soil Types</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="patterns.js"></script> <!-- Load the custom patterns script -->
+</head>
+<body>
+    <canvas id="myChart" width="400" height="200"></canvas>
+    <script>
+        const patternCreator = new JPPitLogPatternCreator();
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                datasets: [
+                    {
+                        label: '礫',
+                        data: [12, 19, 3, 5, 2, 3, 7],
+                        backgroundColor: patternCreator.createPattern('礫'),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                        
+                    },
+                    {
+                        label: '礫質土',
+                        data: [2, 3, 20, 5, 1, 4, 10],
+                        backgroundColor: patternCreator.createPattern('礫質土'),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: '砂',
+                        data: [3, 10, 13, 15, 22, 30, 25],
+                        backgroundColor: patternCreator.createPattern('砂'),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: '砂質土',
+                        data: [12, 19, 3, 5, 2, 3, 7],
+                        backgroundColor: patternCreator.createPattern("砂質土"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: 'シルト',
+                        data: [10, 1, 8, 12, 15, 20, 18],
+                        backgroundColor: patternCreator.createPattern("シルト"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: '粘性土',
+                        data: [10, 1, 8, 12, 15, 20, 18],
+                        backgroundColor: patternCreator.createPattern("粘性土"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    }, 
+                    {
+                        label: '有機質土',
+                        data: [10, 1, 8, 12, 15, 20, 18],
+                        backgroundColor: patternCreator.createPattern("有機質土"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: '火山灰質粘性土',
+                        data: [10, 1, 8, 12, 15, 20, 18],
+                        backgroundColor: patternCreator.createPattern("火山灰質粘性土"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    },
+                    {
+                        label: '高有機質土',
+                        data: [10, 1, 8, 12, 15, 20, 18],
+                        backgroundColor: patternCreator.createPattern("高有機質土（腐植土）"),
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        stack: 'SoilTypes'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Stacked Bar Chart with Soil Types'
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                    },
+                    y: {
+                        stacked: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
