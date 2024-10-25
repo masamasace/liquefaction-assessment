@@ -4,9 +4,10 @@ class JPPitLogPatternCreator {
         this.patternContext = this.patternCanvas.getContext('2d');
     }
 
-    createPattern(soilType){
+    createPattern(soilType, patternSize=60, markerSize=4, lineWidth=1){
         // Ref: https://www.city.osaka.lg.jp/kensetsu/cmsfiles/contents/0000023/23825/5_04.pdf
         // Ref2: https://www.jice.or.jp/cms/kokudo/pdf/tech/material/dokouh21_08.pdf
+        // Ref3: https://www.zenchiren.or.jp/houkoku/PDF/2-02.pdf
         const firstCategoryNameList = ["礫", "礫質土", "砂", "砂質土", "シルト", 
                                        "粘性土", "有機質土", "火山灰質粘性土", "高有機質土（腐植土）"];
         const secondCategoryNameList = ["砂質", "シルト質", "粘土質", "有機質", "火山灰質", 
@@ -17,7 +18,7 @@ class JPPitLogPatternCreator {
 
         const categoryMatchedIndices = this.matchCategoryName_(soilType, firstCategoryNameList, secondCategoryNameList, thirdCategoryNameList);
         
-        return this.createPatternBase_(categoryMatchedIndices);
+        return this.createPatternBase_(categoryMatchedIndices, patternSize, markerSize, lineWidth);
     }
 
     matchCategoryName_(soilType, firstCategoryNameList, secondCategoryNameList, thirdCategoryNameList){
@@ -54,7 +55,7 @@ class JPPitLogPatternCreator {
         }
     }
 
-    createPatternBase_(categoryMatchedIndices){
+    createPatternBase_(categoryMatchedIndices, patternSize, markerSize, lineWidth){
         const firstCategoryIndex = categoryMatchedIndices[0];
         const secondCategoryIndex = categoryMatchedIndices[1];
         const thirdCategoryIndex = categoryMatchedIndices[2];
@@ -64,22 +65,22 @@ class JPPitLogPatternCreator {
         let thirdPatternContext = null;
 
         if (firstCategoryIndex !== -1){
-            firstPatternContext = this.createFirstCategoryPattern_(firstCategoryIndex);
+            firstPatternContext = this.createFirstCategoryPattern_(firstCategoryIndex, patternSize, markerSize, lineWidth);
         }
         else if (secondCategoryIndex !== -1){
-            secondPatternContext = this.createSecondCategoryPattern_(secondCategoryIndex);
+            secondPatternContext = this.createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize, lineWidth);
         }
         else if (thirdCategoryIndex !== -1){
-            thirdPatternContext = this.createThirdCategoryPattern_(thirdCategoryIndex);
+            thirdPatternContext = this.createThirdCategoryPattern_(thirdCategoryIndex, patternSize, markerSize, lineWidth);
         }
 
         return this.combinePatternContexts_(firstPatternContext, secondPatternContext, thirdPatternContext);
     }
 
-    createFirstCategoryPattern_(firstCategoryIndex){
+    createFirstCategoryPattern_(firstCategoryIndex, patternSize, markerSize, lineWidth){
         const patternCanvas = document.createElement('canvas');
-        patternCanvas.width = 60;
-        patternCanvas.height = 60;
+        patternCanvas.width = patternSize;
+        patternCanvas.height = patternSize;
         const patternContext = patternCanvas.getContext('2d');
 
         // Index 0: 礫
@@ -87,159 +88,111 @@ class JPPitLogPatternCreator {
 
             patternContext.fillStyle = "#ffffff";
             patternContext.beginPath();
-            patternContext.arc(15, 45, 4, 0, Math.PI * 2, true); // Adjusted position
+            patternContext.arc(patternSize / 4, patternSize * 3/ 4, markerSize, 0, Math.PI * 2, true); // Adjusted position
             patternContext.fill();
+            patternContext.lineWidth = lineWidth;
             patternContext.stroke();
 
             patternContext.fillStyle = "#ffffff";
             patternContext.beginPath();
-            patternContext.arc(45, 15, 4, 0, Math.PI * 2, true); // Adjusted position
+            patternContext.arc(patternSize * 3/ 4, patternSize / 4, markerSize, 0, Math.PI * 2, true); // Adjusted position
             patternContext.fill();
+            patternContext.lineWidth = lineWidth;
             patternContext.stroke();
 
         }
         // Index 1: 礫質土
         else if (firstCategoryIndex === 1){
 
-            patternContext.fillStyle = "#ffffff";
-            patternContext.beginPath();
-            patternContext.arc(15, 45, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#ffffff";
-            patternContext.beginPath();
-            patternContext.arc(45, 15, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#ffffff";
-            patternContext.beginPath();
-            patternContext.arc(45, 45, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#ffffff";
-            patternContext.beginPath();
-            patternContext.arc(15, 15, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
+            for (let i = 0; i < 2; i++){                
+                for (let j = 0; j < 2; j++){
+                    patternContext.fillStyle = "#ffffff";
+                    patternContext.beginPath();
+                    patternContext.arc(patternSize / 4 + patternSize / 2 * i, patternSize / 4 + patternSize / 2 * j, markerSize, 0, Math.PI * 2, true); // Adjusted position
+                    patternContext.fill();
+                    patternContext.lineWidth = lineWidth;
+                    patternContext.stroke();
+                }
+            }
         }
         // Index 2: 砂
         else if (firstCategoryIndex === 2){
             patternContext.fillStyle = "#000000";
             patternContext.beginPath();
-            patternContext.arc(15, 45, 4, 0, Math.PI * 2, true); // Adjusted position
+            patternContext.arc(patternSize / 4, patternSize * 3/ 4, markerSize, 0, Math.PI * 2, true); // Adjusted position
             patternContext.fill();
+            patternContext.lineWidth = lineWidth;
             patternContext.stroke();
 
             patternContext.fillStyle = "#000000";
             patternContext.beginPath();
-            patternContext.arc(45, 15, 4, 0, Math.PI * 2, true); // Adjusted position
+            patternContext.arc(patternSize * 3/ 4, patternSize / 4, markerSize, 0, Math.PI * 2, true); // Adjusted position
             patternContext.fill();
+            patternContext.lineWidth = lineWidth;
             patternContext.stroke();
         }
         // Index 3: 砂質土
         else if (firstCategoryIndex === 3){
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.arc(15, 45, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.arc(45, 15, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.arc(45, 45, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
-
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.arc(15, 15, 4, 0, Math.PI * 2, true); // Adjusted position
-            patternContext.fill();
-            patternContext.stroke();
+            for (let i = 0; i < 2; i++){                
+                for (let j = 0; j < 2; j++){
+                    patternContext.fillStyle = "#000000";
+                    patternContext.beginPath();
+                    patternContext.arc(patternSize / 4 + patternSize / 2 * i, patternSize / 4 + patternSize / 2 * j, markerSize, 0, Math.PI * 2, true); // Adjusted position
+                    patternContext.fill();
+                    patternContext.lineWidth = lineWidth;
+                    patternContext.stroke();
+                }
+            }
         }
         // Index 4: シルト
         else if (firstCategoryIndex === 4){
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.rect(10, 14.5, 10, 1);
-            patternContext.fill();
-
-            patternContext.beginPath();
-            patternContext.rect(40, 14.5, 10, 1);
-            patternContext.fill();
-
-            patternContext.beginPath();
-            patternContext.rect(40, 44.5, 10, 1);
-            patternContext.fill();
-
-            patternContext.beginPath();
-            patternContext.rect(10, 44.5, 10, 1);
-            patternContext.fill();
+            for (let i = 0; i < 2; i++){                        
+                for (let j = 0; j < 3; j++){
+                    patternContext.fillStyle = "#000000";
+                    patternContext.rect(patternSize / 6 + patternSize / 2 * i, patternSize / 6 + patternSize / 3 * j, patternSize / 3, lineWidth);
+                    patternContext.fill();
+                }
+            }
         }
         // Index 5: 粘性土
         else if (firstCategoryIndex === 5){
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.rect(10, 9.5, 40, 1);
-            patternContext.fill();
-
-            patternContext.beginPath();
-            patternContext.rect(10, 29.5, 40, 1);
-            patternContext.fill();
-
-            patternContext.beginPath();
-            patternContext.rect(10, 49.5, 40, 1);
-            patternContext.fill();
+            for (let j = 0; j < 3; j++){
+                patternContext.fillStyle = "#000000";
+                patternContext.rect(0, patternSize / 6 + patternSize / 3 * j, patternSize, lineWidth);
+                patternContext.fill();
+            }
 
         }
         // Index 6: 有機質土
         else if (firstCategoryIndex === 6){
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.rect(13.5, 10, 1, 10);
-            patternContext.rect(16.5, 10, 1, 10);
-            patternContext.rect(13.5, 40, 1, 10);
-            patternContext.rect(16.5, 40, 1, 10);
-            patternContext.rect(43.5, 10, 1, 10);
-            patternContext.rect(46.5, 10, 1, 10);
-            patternContext.rect(43.5, 40, 1, 10);
-            patternContext.rect(46.5, 40, 1, 10);
-
-            patternContext.fill();
+            for (let i = 0; i < 2; i++){
+                for (let j = 0; j < 3; j++){
+                    for (let k = 0; k < 2; k++){
+                        patternContext.fillStyle = "#000000";
+                        patternContext.beginPath();
+                        patternContext.moveTo(patternSize / 4 + patternSize / 2 * i - lineWidth / 2 + 2 * lineWidth * k, patternSize / 12 + patternSize / 3 * j);
+                        patternContext.lineTo(patternSize / 4 + patternSize / 2 * i - lineWidth / 2 + 2 * lineWidth * k, patternSize * 3 / 12 + patternSize / 3 * j);
+                        patternContext.closePath();
+                        patternContext.lineWidth = lineWidth;
+                        patternContext.stroke();
+                    }
+                }
+            }
         }
         // Index 7: 火山灰質粘性土
         else if (firstCategoryIndex === 7){
-
-            patternContext.fillStyle = "#000000";
-            patternContext.beginPath();
-            patternContext.moveTo(10, 10); // Starting point
-            patternContext.bezierCurveTo(15, 0, 20, 20, 25, 10); 
-            patternContext.bezierCurveTo(30, 0, 35, 20, 40, 10);
-            patternContext.bezierCurveTo(45, 0, 50, 20, 55, 10);
-            patternContext.stroke();
-
-            patternContext.beginPath();
-            patternContext.moveTo(10, 30); // Starting point
-            patternContext.bezierCurveTo(15, 20, 20, 40, 25, 30); 
-            patternContext.bezierCurveTo(30, 20, 35, 40, 40, 30);
-            patternContext.bezierCurveTo(45, 20, 50, 40, 55, 30);
-            patternContext.stroke();
-
-            patternContext.beginPath();
-            patternContext.moveTo(10, 50); // Starting point
-            patternContext.bezierCurveTo(15, 40, 20, 60, 25, 50); 
-            patternContext.bezierCurveTo(30, 40, 35, 60, 40, 50);
-            patternContext.bezierCurveTo(45, 40, 50, 60, 55, 50);
-            patternContext.stroke();
+     
+            // bazier curve regressing 1/4 sin curve
+            // (-pi/2, -1), (-pi/2 + (pi - 2), -1),(pi - (pi - 2)/2, 1), (pi/2, 1)
+            for (let j = 0; j < 3; j++){
+                patternContext.fillStyle = "#000000";
+                patternContext.beginPath();
+                patternContext.moveTo(0, patternSize / 6 + patternSize / 3 * j);
+                patternContext.bezierCurveTo(patternSize / 6, patternSize / 3 * j, patternSize * 2 / 6, patternSize / 3 + patternSize / 3 *  j, patternSize * 3 / 6, patternSize / 6 + patternSize / 3 * j);
+                patternContext.bezierCurveTo(patternSize * 4 / 6, patternSize / 3 * j, patternSize * 5 / 6, patternSize / 3 + patternSize / 3 * j, patternSize * 6 / 6, patternSize / 6 + patternSize / 3 * j);
+                patternContext.lineWidth = lineWidth;
+                patternContext.stroke();
+            }
 
         }
         // Index 8: 高有機質土（腐植土）
@@ -255,7 +208,7 @@ class JPPitLogPatternCreator {
                     patternContext.lineTo(17.5 + 30 * i, 17.5 + 30 * j);
                     patternContext.lineTo(20 + 30 * i, 15 + 30 * j);
                     patternContext.lineTo(25 + 30 * i, 15 + 30 * j);
-                     patternContext.stroke();
+                    patternContext.stroke();
                 }
             }
         }
@@ -263,10 +216,10 @@ class JPPitLogPatternCreator {
 
     }
 
-    createSecondCategoryPattern_(secondCategoryIndex){
+    createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize){
     }
 
-    createThirdCategoryPattern_(thirdCategoryIndex){
+    createThirdCategoryPattern_(thirdCategoryIndex, patternSize, markerSize){
     }
     
     combinePatternContexts_(firstPatternContext, secondPatternContext, thirdPatternContext){
