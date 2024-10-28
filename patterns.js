@@ -18,6 +18,7 @@ class JPPitLogPatternCreator {
 
         const categoryMatchedIndices = this.matchCategoryName_(soilType, firstCategoryNameList, secondCategoryNameList, thirdCategoryNameList);
         
+        console.log(categoryMatchedIndices);
         return this.createPatternBase_(categoryMatchedIndices, patternSize, markerSize, lineWidth);
     }
 
@@ -67,10 +68,10 @@ class JPPitLogPatternCreator {
         if (firstCategoryIndex !== -1){
             firstPatternContext = this.createFirstCategoryPattern_(firstCategoryIndex, patternSize, markerSize, lineWidth);
         }
-        else if (secondCategoryIndex !== -1){
+        if (secondCategoryIndex !== -1){
             secondPatternContext = this.createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize, lineWidth);
         }
-        else if (thirdCategoryIndex !== -1){
+        if (thirdCategoryIndex !== -1){
             thirdPatternContext = this.createThirdCategoryPattern_(thirdCategoryIndex, patternSize, markerSize, lineWidth);
         }
 
@@ -228,7 +229,7 @@ class JPPitLogPatternCreator {
 
     }
 
-    createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize){
+    createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize, lineWidth){
 
         const patternCanvas = document.createElement('canvas');
         patternCanvas.width = patternSize;
@@ -236,17 +237,135 @@ class JPPitLogPatternCreator {
         const patternContext = patternCanvas.getContext('2d');
 
         // Index 0: 砂質
+        // TODO: 斜線の端部の処理が必要。部分的に連続になってしまっている。
         if (secondCategoryIndex === 0){
             patternContext.fillStyle = "#000000";
-            patternContext.setLineDash([10, 5]);
+            patternContext.setLineDash([2.5, 2.5]);
+            patternContext.lineWidth = lineWidth
+
+            patternContext.beginPath();
             patternContext.moveTo(patternSize, 0);
             patternContext.lineTo(0, patternSize);
             patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, 0);
+            patternContext.lineTo(0, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, patternSize);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, patternSize);
+            patternContext.lineTo(patternSize, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(0, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, 0);
+            patternContext.stroke();
         }
         // Index 1: シルト質
+        else if (secondCategoryIndex === 1){
+            patternContext.fillStyle = "#000000";
+            patternContext.setLineDash([5, 5]);
+            patternContext.lineWidth = lineWidth
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize, 0);
+            patternContext.lineTo(0, patternSize);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, 0);
+            patternContext.lineTo(0, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, patternSize);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, patternSize);
+            patternContext.lineTo(patternSize, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(0, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, 0);
+            patternContext.stroke();
+        }
         // Index 2: 粘土質
+        else if (secondCategoryIndex === 2){
+            patternContext.fillStyle = "#000000";
+            patternContext.lineWidth = lineWidth
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize, 0);
+            patternContext.lineTo(0, patternSize);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, 0);
+            patternContext.lineTo(0, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, patternSize);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(patternSize - 4 * lineWidth, patternSize);
+            patternContext.lineTo(patternSize, patternSize - 4 * lineWidth);
+            patternContext.stroke();
+
+            patternContext.beginPath();
+            patternContext.moveTo(0, 4 * lineWidth);
+            patternContext.lineTo(4 * lineWidth, 0);
+            patternContext.stroke();
+        }
         // Index 3: 有機質
+        // TODO: linewidthとpatternSizeの関係を調整する必要がある。
+        else if (secondCategoryIndex === 3){
+            patternContext.fillStyle = "#000000";
+            patternContext.lineWidth = lineWidth
+
+            for (let i = 0; i < 2; i++){
+                for (let j = 0; j < 4; j++){
+                    for (let k = 0; k < 2; k++){
+                        patternContext.beginPath();
+                        patternContext.moveTo(patternSize - patternSize / 8 * (2*j - 1)
+                                              + patternSize / 12 * (2*i - 1) + 2 * lineWidth * (2*k - 1), 
+                                              - patternSize / 16 + patternSize / 8 * (2*j + 1));
+                        patternContext.lineTo(patternSize - patternSize / 8 * (2*j - 1)
+                                              + patternSize / 12 * (2*i - 1) + 2 * lineWidth * (2*k - 1), 
+                                              patternSize / 16 + patternSize / 8 * (2*j + 1));
+                        patternContext.stroke();
+                    }
+                }
+            }
+        }
+
         // Index 4: 火山灰質
+        else if (secondCategoryIndex === 4){
+            patternContext.fillStyle = "#000000";
+            patternContext.lineWidth = lineWidth
+
+            for (let i = 0; i < 2; i++){
+                for (let j = 0; j < 4; j++){
+                    for (let k = 0; k < 2; k++){
+                        patternContext.beginPath();
+                        
+                        patternContext.stroke();
+                    }
+                }
+            }
+        }
         // Index 5: 玉石混り
         // Index 6: 砂利、礫混り
         // Index 7: 砂混り
@@ -255,7 +374,10 @@ class JPPitLogPatternCreator {
         // Index 10: 有機質土混り
         // Index 11: 火山灰混り
         // Index 12: 貝殻混り
-
+        else {
+            return null;
+        }
+        return patternContext.createPattern(patternCanvas, 'repeat');
         
     }
 
@@ -267,7 +389,7 @@ class JPPitLogPatternCreator {
             return thirdPatternContext;
         }
         else if (firstPatternContext !== null && secondPatternContext !== null){
-            console.log(firstPatternContext)
+            return secondPatternContext
         }
         else if (firstPatternContext !== null){
             return firstPatternContext;
