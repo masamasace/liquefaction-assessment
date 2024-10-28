@@ -182,18 +182,23 @@ class JPPitLogPatternCreator {
         // Index 7: 火山灰質粘性土
         else if (firstCategoryIndex === 7){
      
-            // bazier curve regressing 1/4 sin curve
-            // (-pi/2, -1), (-pi/2 + (pi - 2), -1),(pi - (pi - 2)/2, 1), (pi/2, 1)
-            for (let j = 0; j < 3; j++){
-                patternContext.fillStyle = "#000000";
-                patternContext.beginPath();
-                patternContext.moveTo(0, patternSize / 6 + patternSize / 3 * j);
-                patternContext.bezierCurveTo(patternSize / 6, patternSize / 3 * j, patternSize * 2 / 6, patternSize / 3 + patternSize / 3 *  j, patternSize * 3 / 6, patternSize / 6 + patternSize / 3 * j);
-                patternContext.bezierCurveTo(patternSize * 4 / 6, patternSize / 3 * j, patternSize * 5 / 6, patternSize / 3 + patternSize / 3 * j, patternSize * 6 / 6, patternSize / 6 + patternSize / 3 * j);
+            // bazier curve regressing 1/2 sin curve
+            // (-pi/2, -1), (-pi/2 + (pi - 2), -1),(pi / 2 - (pi - 2), 1), (pi/2, 1)
+            for (let i = 0; i < 4; i++){
+                for (let j = 0; j < 3; j++){
+                    patternContext.fillStyle = "#000000";
+                    patternContext.beginPath();
+                    patternContext.moveTo(patternSize / 4 * i, patternSize * 3 / 10 + patternSize / 3 * j);
+                    patternContext.bezierCurveTo((Math.PI - 2) / Math.PI * patternSize / 8 + patternSize / 4 * i, patternSize * 3 / 10 + patternSize / 3 * j,
+                                                  2 / Math.PI * patternSize / 8 + patternSize / 4 * i, patternSize * 1 / 10 + patternSize / 3 * j,
+                                                  patternSize / 8 + patternSize / 4 * i, patternSize * 1 / 10 + patternSize / 3 * j)
+                    patternContext.bezierCurveTo((Math.PI - 2) / Math.PI * patternSize / 8 + patternSize / 8 + patternSize / 4 * i, patternSize * 1 / 10 + patternSize / 3 * j,
+                                                  2 / Math.PI * patternSize / 8 + patternSize / 8 + patternSize / 4 * i, patternSize * 3 / 10 + patternSize / 3 * j,
+                                                  patternSize / 4 + patternSize / 4 * i, patternSize * 3 / 10 + patternSize / 3 * j)
                 patternContext.lineWidth = lineWidth;
                 patternContext.stroke();
+                }
             }
-
         }
         // Index 8: 高有機質土（腐植土）
         else if (firstCategoryIndex === 8){
@@ -201,22 +206,57 @@ class JPPitLogPatternCreator {
                 for (let j = 0; j < 2; j++){
                     patternContext.fillStyle = "#000000";
 
+                    const x_center = patternSize / 4 + patternSize / 2 * i;
+                    const y_center = patternSize / 4 + patternSize / 2 * j;
+
                     patternContext.beginPath();
-                    patternContext.moveTo(15 + 30 * i, 15 + 30 * j); // Starting point
-                    patternContext.lineTo(17.5 + 30 * i, 17.5 + 30 * j);
-                    patternContext.lineTo(17.5 + 30 * i, 20 + 30 * j);
-                    patternContext.lineTo(17.5 + 30 * i, 17.5 + 30 * j);
-                    patternContext.lineTo(20 + 30 * i, 15 + 30 * j);
-                    patternContext.lineTo(25 + 30 * i, 15 + 30 * j);
+                    patternContext.moveTo(x_center - markerSize, y_center - markerSize); 
+                    patternContext.lineTo(x_center, y_center); // center point
+                    patternContext.lineTo(x_center, y_center + markerSize);
+                    patternContext.lineTo(x_center, y_center);
+                    patternContext.lineTo(x_center + markerSize, y_center - markerSize);
+                    patternContext.lineTo(x_center + 2 * markerSize, y_center - markerSize);
+                    patternContext.lineWidth = lineWidth;
                     patternContext.stroke();
                 }
             }
+        }
+        else {
+            return null;
         }
         return patternContext.createPattern(patternCanvas, 'repeat');
 
     }
 
     createSecondCategoryPattern_(secondCategoryIndex, patternSize, markerSize){
+
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = patternSize;
+        patternCanvas.height = patternSize;
+        const patternContext = patternCanvas.getContext('2d');
+
+        // Index 0: 砂質
+        if (secondCategoryIndex === 0){
+            patternContext.fillStyle = "#000000";
+            patternContext.setLineDash([10, 5]);
+            patternContext.moveTo(patternSize, 0);
+            patternContext.lineTo(0, patternSize);
+            patternContext.stroke();
+        }
+        // Index 1: シルト質
+        // Index 2: 粘土質
+        // Index 3: 有機質
+        // Index 4: 火山灰質
+        // Index 5: 玉石混り
+        // Index 6: 砂利、礫混り
+        // Index 7: 砂混り
+        // Index 8: シルト混り
+        // Index 9: 粘土混り
+        // Index 10: 有機質土混り
+        // Index 11: 火山灰混り
+        // Index 12: 貝殻混り
+
+        
     }
 
     createThirdCategoryPattern_(thirdCategoryIndex, patternSize, markerSize){
@@ -227,7 +267,7 @@ class JPPitLogPatternCreator {
             return thirdPatternContext;
         }
         else if (firstPatternContext !== null && secondPatternContext !== null){
-            return null;
+            console.log(firstPatternContext)
         }
         else if (firstPatternContext !== null){
             return firstPatternContext;
