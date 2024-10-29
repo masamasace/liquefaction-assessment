@@ -8,17 +8,43 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/tabulator-tables@5.2.7/dist/js/tabulator.min.js"></script>
     <style>
-        #tablesContainer, #chartsContainer {
+        h3{
+            /*横方向の余白のみ20px*/
+            margin-left: 10px;
+            margin-bottom: 0px;
+        }
+        #dataContainer, #chartsContainer, #buttonContainer {
             display: flex;
             margin: 20px;
         }
-        #soilTable, #dataTable, #soilTypeChart, #SPTChart {
-            margin: 10px;
-            max-width: 400px;
-            max-height: 800px;
+        #dataContainer > div {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align items at the start of the container */
+            height: 350px; /* Set a consistent height for both table containers */
         }
-        #soilTable, #dataTable {
+        #SPTChart {
+            margin: 10px;
+            max-width: 200px;
+            max-height: 400px;
+        }
+        #soilColumnChart {
+            margin: 10px;
+            max-width: 75px;
+            max-height: 400px;
+        }
+        #settingPanel {
+            margin: 10px;
+            width: 400px;
             height: 300px;
+            overflow-x: auto;
+            overflow-y: auto;
+        }
+        #soilTable, #SPTTable {
+            margin: 10px;
+            width: 400px;
+            height: 300px;
+            overflow-x: auto;
             overflow-y: auto;
         }
         #dropZone {
@@ -34,39 +60,63 @@
         canvas {
             margin: 10px;
         }
+        .no-edit-cell-text {
+            color: #a0a0a0; /* Change this to your desired text color */
+        }
+        #buttonContainer button {
+            margin-right: 10px; /* Add spacing between buttons */
+        }
     </style>
 </head>
 <body>
     <div id="dropZone">Drag and drop XML file here or click to select</div>
     <input type="file" id="fileInput" accept=".xml" style="display: none;" />
-    <button id="loadSampleData">Load Sample Data</button>
-    <button id="resetData">Reset</button>
 
-    <div id="tablesContainer">
-        <div id="soilTable"></div>
-        <div id="dataTable"></div>
+    <div id="buttonContainer">
+        <button id="loadSampleData">Load Sample Data</button>
+        <button id="resetData">Reset</button>
+    </div>
+
+    <div id="dataContainer">
+        <div>
+            <h3>設定</h3>
+            <div id="settingPanel">
+                <div
+            </div>
+        </div>
+        <div>
+            <h3>土質データ</h3>
+            <div id="soilTable"></div>
+        </div>
+        <div>
+            <h3>標準貫入試験データ</h3>
+            <div id="SPTTable"></div>
+        </div>
     </div>
 
     <div id="chartsContainer">
-        <canvas id="soilTypeChart" width="400" height="400"></canvas>
+        <canvas id="soilColumnChart" width="400" height="400"></canvas>
         <canvas id="SPTChart" width="400" height="400"></canvas>
     </div>
 
     <script>
-        const ctxSoilType = document.getElementById('soilTypeChart').getContext('2d');
+        const ctxSoilType = document.getElementById('soilColumnChart').getContext('2d');
         const ctxSPT = document.getElementById('SPTChart').getContext('2d');
 
         const color_list = {
-            "Gravel": "rgba(75, 192, 192, 0.2)", 
-            "Sand": "rgba(255, 99, 132, 0.2)", 
-            "Silt": "rgba(255, 206, 86, 0.2)",
-            "Clay": "rgba(255, 236, 106, 0.2)"
+            "礫": "rgba(75, 192, 192, 0.2)", 
+            "砂": "rgba(255, 99, 132, 0.2)", 
+            "シルト": "rgba(255, 206, 86, 0.2)",
+            "粘土": "rgba(255, 236, 106, 0.2)",
+            "表土": "rgba(0, 0, 0, 0.5)"
         };
 
         const chartDataSoilType = { labels: [""], datasets: [] };
-        const chartDataSPT = { datasets: [{ label: 'Depth vs 2N', data: [], borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', borderWidth: 3, showLine: true, pointRadius: 0 }] };
+        const SPTDataForChart = { datasets: [{ label: 'Depth vs 2N', data: [], borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', borderWidth: 3, showLine: true, pointRadius: 0 }] };
 
-        const soilTypeChart = new Chart(ctxSoilType, {
+        let maxDepth = 10;
+
+        const soilColumnChart = new Chart(ctxSoilType, {
             type: 'bar',
             data: chartDataSoilType,
             options: {
@@ -80,10 +130,10 @@
 
         const SPTChart = new Chart(ctxSPT, {
             type: 'scatter',
-            data: chartDataSPT,
+            data: SPTDataForChart,
             options: {
                 scales: {
-                    x: { title: { display: true, text: '2N', font: { size: 14 } }, beginAtZero: true },
+                    x: { title: { display: true, text: '2N', font: { size: 14 } }, beginAtZero: true, max: 50 },
                     y: { title: { display: true, text: 'Depth (m)', font: { size: 14 } }, reverse: true, beginAtZero: true }
                 },
                 plugins: { legend: { display: false } }
@@ -91,26 +141,44 @@
         });
 
         const soilTable = new Tabulator("#soilTable", {
-            layout: "fitColumns",
-            height: "300px",
+            layout: "fitDataTable",
             columns: [
-                {title: "上限<br>深度", field: "upperDepth", editor: "input", headerSort: false},
-                {title: "下限<br>深度", field: "lowerDepth", editor: "input", headerSort: false},
-                {title: "層厚", field: "layerThickness", editor: "input", headerSort: false},
-                {title: "土質<br>分類", field: "soilType", editor: "select", editorParams: { values: ["Gravel", "Sand", "Silt", "Clay"] }, headerSort: false}
+                {title: "下端深度", field: "lowerDepth", editor: "input", headerSort: false, width: 75},
+                {title: "層厚", field: "layerThickness", headerSort: false, cssClass: "no-edit-cell-text", width: 75, formatter: "money", formatterParams: { precision: 2 }},
+                {title: "土質分類", field: "soilType", editor: "list", editorParams: { values: ["表土", "礫", "砂", "シルト", "粘土"] }, headerSort: false, width: 75},
+                {title: "γt", field: "wetUnitWeight", editor: "input", headerSort: false, width: 50},
+                {title: "γsat", field: "satUnitWeight", editor: "input", headerSort: false, width: 50},
+                {title: "Fc", field: "fineContent", editor: "input", headerSort: false, width: 50},
+                {title: "D50", field: "d50", editor: "input", headerSort: false, width: 75},
+                {title: "Ip", field: "plasticityIndex", editor: "input", headerSort: false, width: 50},
+                {title: "RL", field: "liquefactionResistance", editor: "input", headerSort: false, width: 50},
+                {title: "FL判定", field: "flManifestFlag", editor: "input", headerSort: false, width: 75}
             ],
-            data: []
+            data: [],
+        });
+        soilTable.on("dataChanged", function(data) {
+            updateTableAndChart();
         });
 
-        const boreholeTable = new Tabulator("#dataTable", {
-            layout: "fitColumns",
-            height: "300px",
+        const SPTTable = new Tabulator("#SPTTable", {
+            layout: "fitdataTable",
             columns: [
-                {title: "標準貫入試験_開始深度", field: "startDepth", editor: "input", headerSort: false},
-                {title: "標準貫入試験_合計打撃回数", field: "totalHits", editor: "input", headerSort: false},
-                {title: "2N", field: "twoN", headerSort: false}
+                {title: "深度", field: "SPTDepth", editor: "input", headerSort: false, width: 50},
+                {title: "N値", field: "SPTN", editor: "input", headerSort: false, width: 30},
+                {title: "土質分類", field: "soilType", editor: "input", headerSort: false, width: 75},
+                {title: "γt", field: "wetUnitWeight", editor: "input", headerSort: false, width: 50},
+                {title: "γsat", field: "satUnitWeight", editor: "input", headerSort: false, width: 50},
+                {title: "Fc", field: "fineContent", editor: "input", headerSort: false, width: 50},
+                {title: "D50", field: "d50", editor: "input", headerSort: false, width: 75},
+                {title: "Ip", field: "plasticityIndex", editor: "input", headerSort: false, width: 50},
+                {title: "RL", field: "liquefactionResistance", editor: "input", headerSort: false, width: 50},
+                {title: "FL判定", field: "flManifestFlag", editor: "input", headerSort: false, width: 75}
             ],
-            data: []
+            data: [],
+
+        });
+        SPTTable.on("dataChanged", function(data) {
+            updateTableAndChart();
         });
 
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
@@ -136,12 +204,16 @@
             if (file) processFile(file);
         }
 
+        let originalSPTData = [];
+        let originalSoilData = [];
+
         function processFile(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const content = decodeFileContent(e.target.result);
                 const xmlDoc = parseXML(content);
-                updateTableAndChart(xmlDoc);
+                storeData(xmlDoc);
+                updateTableAndChart(isUpdateOriginal=true);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -157,65 +229,227 @@
             return parser.parseFromString(content, "text/xml");
         }
 
-        function updateTableAndChart(xmlDoc) {
-            const tests = xmlDoc.getElementsByTagName('標準貫入試験');
-            const data = [];
-            chartDataSPT.datasets[0].data = [];
+        function storeData(xmlDoc) {
+            const SPT = xmlDoc.getElementsByTagName('標準貫入試験');
+            const soilLayers = xmlDoc.getElementsByTagName('工学的地質区分名現場土質名');
+            console.log(SPT, soilLayers);
+            const SPTData = [];
+            const soilData = [];
 
-            for (let i = 0; i < tests.length; i++) {
-                const startDepth = tests[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent;
-                const totalHits = tests[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
-                const twoN = totalHits * 2;
+            // check if there are tags of 標準貫入試験_開始深度 and 上限深度
+            if (SPT.length === 0) {
+                alert("XMLファイルに標準貫入試験データがありません。サンプルデータを読み込みます。");
+                loadSampleData();
+                return;
+            }
+            else if (soilLayers.length === 0) {
+                alert("XMLファイルに土質データデータがありません。サンプルデータを読み込みます。");
+                loadSampleData();
+                return;
+            }
+            else {
+                for (let i = 0; i < SPT.length; i++) {
+                const SPTDepth = parseFloat(SPT[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent);
+                const SPTN = SPT[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
 
-                data.push({startDepth, totalHits, twoN});
-                chartDataSPT.datasets[0].data.push({x: twoN, y: startDepth});
+                SPTData.push({SPTDepth, SPTN});
+                }
+
+                // check if there are tags of 工学的地質区分名現場土質名_下端深度
+                if (soilLayers[0].getElementsByTagName('工学的地質区分名現場土質名_下端深度').length === 0) {
+                    alert("XMLファイルに下端深度データがありません。サンプルデータを読み込みます。");
+                    loadSampleData();
+                    return;
+                }
+
+                for (let i = 0; i < soilLayers.length; i++) {
+                    const lowerDepth = parseFloat(soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_下端深度')[0].textContent);
+                    
+                    let layerThickness;
+                    if (i === 0) {
+                        layerThickness = lowerDepth;
+                    }
+                    else {
+                        layerThickness = lowerDepth - soilData[i - 1].lowerDepth;
+                    }
+                    const soilType = soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_工学的地質区分名現場土質名')[0].textContent;
+
+                    soilData.push({lowerDepth, layerThickness, soilType});
+                }
             }
 
-            boreholeTable.setData(data);
+            SPTTable.setData(SPTData);
+            soilTable.setData(soilData);
+        }
+
+        function calculateLayerThickness(data) {
+            for (let i = 0; i < data.length; i++) {
+                if (i === 0) {
+                    data[i].layerThickness = parseFloat(data[i].lowerDepth);
+                }
+                else {
+                    data[i].layerThickness = parseFloat(data[i].lowerDepth) - parseFloat(data[i - 1].lowerDepth);
+                }
+            }
+            soilTable.setData(data);
+        }
+
+        function checkUpperDepth(data) {
+            for (let i = 1; i < data.length; i++) {
+                if (parseFloat(data[i].lowerDepth) < parseFloat(data[i - 1].lowerDepth)) {
+                    alert("土質データの下端深度が前の土質データの下端深度よりも小さいです。元の値に戻します。");
+                    data[i - 1].lowerDepth = parseFloat(data[i -2].lowerDepth) + parseFloat(data[i - 1].layerThickness);
+                }
+            }
+            soilTable.setData(data);
+        }
+
+        function insertSoilDataToSPTData(SPTData, soilData, i, j) {
+            SPTData[i].soilType = soilData[j].soilType;
+            SPTData[i].wetUnitWeight = soilData[j].wetUnitWeight;
+            SPTData[i].satUnitWeight = soilData[j].satUnitWeight;
+            SPTData[i].fineContent = soilData[j].fineContent;
+            SPTData[i].d50 = soilData[j].d50;
+            SPTData[i].plasticityIndex = soilData[j].plasticityIndex;
+            SPTData[i].liquefactionResistance = soilData[j].liquefactionResistance;
+            SPTData[i].flManifestFlag = soilData[j].flManifestFlag;
+        }
+
+        function calculateSPTChartValues(SPTData, soilData) {
+            for (let i = 0; i < SPTData.length; i++) {
+                for (let j = 0; j < soilData.length; j++) {
+                    if (j === 0) {
+                        if (SPTData[i].SPTDepth <= soilData[j].lowerDepth) {
+                            insertSoilDataToSPTData(SPTData, soilData, i, j);
+                            break;
+                        }
+                    }
+                    else {
+                        if (SPTData[i].SPTDepth <= soilData[j].lowerDepth && SPTData[i].SPTDepth > soilData[j - 1].lowerDepth) {
+                            insertSoilDataToSPTData(SPTData, soilData, i, j);
+                            break;
+                        }
+                    }
+                }
+            }
+            SPTTable.setData(SPTData);
             SPTChart.update();
         }
 
-        function loadSampleData() {
-            const sampleBoreholeData = [
-                {startDepth: '1', totalHits: '1', twoN: 2},
-                {startDepth: '2', totalHits: '2', twoN: 4},
-                {startDepth: '3', totalHits: '5', twoN: 10},
-                {startDepth: '4', totalHits: '8', twoN: 16},
-                {startDepth: '5', totalHits: '3', twoN: 6},
-                {startDepth: '6', totalHits: '4', twoN: 8},
-                {startDepth: '7', totalHits: '8', twoN: 16},
-                {startDepth: '8', totalHits: '10', twoN: 20},
-                {startDepth: '9', totalHits: '12', twoN: 24},
-                {startDepth: '10', totalHits: '15', twoN: 30}
-            ];
+        function updateTableAndChart(isUpdateOriginal=false) {
+            const SPTData = SPTTable.getData();
+            const soilData = soilTable.getData();
 
-            const sampleSoilData = [
-                {upperDepth: "0", lowerDepth: "3", layerThickness: 3, soilType: "Gravel"},
-                {upperDepth: "3", lowerDepth: "5", layerThickness: 2, soilType: "Sand"},
-                {upperDepth: "5", lowerDepth: "10", layerThickness: 5, soilType: "Silt"},
-            ];
+            // update layer thickness
+            checkUpperDepth(soilData);
+            calculateLayerThickness(soilData);
 
-            boreholeTable.setData(sampleBoreholeData);
-            soilTable.setData(sampleSoilData);
+            // update SPT chart values
+            calculateSPTChartValues(SPTData, soilData);
 
-            chartDataSPT.datasets[0].data = sampleBoreholeData.map(d => ({x: d.twoN, y: d.startDepth}));
+            console.log(SPTData);
+
+            // update original data
+            if (isUpdateOriginal) {
+                originalSPTData = structuredClone(SPTData);
+                originalSoilData = structuredClone(soilData);
+            }
+
+            // Update max depth
+            maxDepth = Math.max(maxDepth, soilData[soilData.length - 1].lowerDepth, SPTData[SPTData.length - 1].SPTDepth);
+
+            // Update SPT chart
+            SPTDataForChart.datasets[0].data = SPTData.map(d => ({x: d.SPTN, y: d.SPTDepth}));
+            SPTChart.options.scales.y.max = maxDepth;
             SPTChart.update();
 
-            const sampleSoilDatasetsForChart = sampleSoilData.map(data => ({
+            // Update soil column chart
+            chartDataSoilType.datasets = soilData.map(data => ({
                 label: data.soilType,
                 data: [data.layerThickness],
                 backgroundColor: [color_list[data.soilType]]
             }));
+            soilColumnChart.options.scales.y.max = maxDepth;
+            soilColumnChart.update();
+        }
 
-            chartDataSoilType.datasets = sampleSoilDatasetsForChart;
-            soilTypeChart.update();
+        function loadSampleData() {
+            const sampleSPTData = [
+                {SPTDepth: '1', SPTN: '1'},
+                {SPTDepth: '2', SPTN: '2'},
+                {SPTDepth: '3', SPTN: '5'},
+                {SPTDepth: '4', SPTN: '8'},
+                {SPTDepth: '5', SPTN: '3'},
+                {SPTDepth: '6', SPTN: '4'},
+                {SPTDepth: '7', SPTN: '8'},
+                {SPTDepth: '8', SPTN: '10'},
+                {SPTDepth: '9', SPTN: '12'},
+                {SPTDepth: '10', SPTN: '15'},
+                {SPTDepth: '11', SPTN: '11'},
+                {SPTDepth: '12', SPTN: '2'},
+                {SPTDepth: '13', SPTN: '2'},
+                {SPTDepth: '14', SPTN: '32'},
+                {SPTDepth: '15', SPTN: '35'},
+                {SPTDepth: '16', SPTN: '38'},
+                {SPTDepth: '17', SPTN: '50'},
+                {SPTDepth: '18', SPTN: '19'},
+                {SPTDepth: '19', SPTN: '50'},
+                {SPTDepth: '20', SPTN: '50'},
+                {SPTDepth: '21', SPTN: '50'},
+                {SPTDepth: '22', SPTN: '50'},
+                {SPTDepth: '23', SPTN: '50'},
+                {SPTDepth: '24', SPTN: '50'},
+                {SPTDepth: '25', SPTN: '50'}
+            ];
+
+            const sampleSoilData = [
+                {lowerDepth: 1, layerThickness: 1, soilType: "表土", wetUnitWeight: 1.6, 
+                satUnitWeight: 1.75, fineContent: 80, d50: 0.002, plasticityIndex: 40, 
+                liquefactionResistance: 0.9, flManifestFlag: false},
+                {lowerDepth: 4.5, layerThickness: 3.5, soilType: "砂", wetUnitWeight: 1.8, 
+                satUnitWeight: 1.95, fineContent: 10, d50: 0.02, plasticityIndex: 0, 
+                liquefactionResistance: 0.25, flManifestFlag: true},
+                {lowerDepth: 7, layerThickness: 2.5, soilType: "シルト", wetUnitWeight: 1.7, 
+                satUnitWeight: 1.8, fineContent: 40, d50: 0.008, plasticityIndex: 10, 
+                liquefactionResistance: 0.2, flManifestFlag: true},
+                {lowerDepth: 11, layerThickness: 4, soilType: "砂", wetUnitWeight: 1.8, 
+                satUnitWeight: 1.95, fineContent: 15, d50: 0.03, plasticityIndex: 0, 
+                liquefactionResistance: 0.3, flManifestFlag: true},
+                {lowerDepth: 13, layerThickness: 2, soilType: "粘土", wetUnitWeight: 1.5, 
+                satUnitWeight: 1.7, fineContent: 90, d50: 0.0025, plasticityIndex: 40, 
+                liquefactionResistance: 0.9, flManifestFlag: false},
+                {lowerDepth: 25, layerThickness: 12, soilType: "礫", wetUnitWeight: 2, 
+                satUnitWeight: 2.1, fineContent: 0, d50: 2.5, plasticityIndex: 1, 
+                liquefactionResistance: 0.5, flManifestFlag: true}
+            ];
+
+            SPTTable.setData(sampleSPTData);
+            soilTable.setData(sampleSoilData);
+
+            updateTableAndChart(isUpdateOriginal=true);
         }
 
         function resetData() {
-            boreholeTable.clearData();
-            soilTable.clearData();
-            chartDataSPT.datasets[0].data = [];
-            SPTChart.update();
+            if (originalSPTData.length > 0 && originalSoilData.length > 0) {
+                // Revert to original data if XML file was loaded
+                SPTTable.setData(originalSPTData);
+                soilTable.setData(originalSoilData);
+
+                SPTDataForChart.datasets[0].data = originalSPTData.map(d => ({x: d.SPTN, y: d.SPTDepth}));
+                SPTChart.update();
+
+                const originalSoilDatasetsForChart = originalSoilData.map(data => ({
+                    label: data.soilType,
+                    data: [data.layerThickness],
+                    backgroundColor: [color_list[data.soilType]]
+                }));
+
+                chartDataSoilType.datasets = originalSoilDatasetsForChart;
+                soilColumnChart.update();
+            } else {
+                // Load sample data if no XML file was loaded
+                loadSampleData();
+            }
         }
 
         window.onload = loadSampleData;
