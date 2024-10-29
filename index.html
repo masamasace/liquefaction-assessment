@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/tabulator-tables@5.2.7/dist/js/tabulator.min.js"></script>
     <style>
+        body {
+            font-family: sans-serif; /* Set default font to sans-serif */
+        }
         h3{
             /*横方向の余白のみ20px*/
             margin-left: 10px;
@@ -40,6 +43,19 @@
             overflow-x: auto;
             overflow-y: auto;
         }
+        #mainSettingPanel {
+            max-height: 100px; /* Set the maximum height */
+            overflow-y: auto;  /* Enable vertical scrolling */
+            margin: 10px;
+        }
+        #detailSettingPanel {
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: nowrap; /* Prevent line breaks and allow horizontal scrolling */
+        }
+        #detailSettingPanel > div {
+            margin: 10px; /* Add spacing between setting subpanels */
+        }
         #soilTable, #SPTTable {
             margin: 10px;
             width: 400px;
@@ -66,6 +82,40 @@
         #buttonContainer button {
             margin-right: 10px; /* Add spacing between buttons */
         }
+        .tab-button {
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            transition: 0.3s;
+            height: 30px; /* Adjust the height as needed */
+        }
+
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+            border-top: none;
+        }
+
+        .active {
+            background-color: #ccc;
+        }
+
+        #mainSettingPanel div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px; /* Add some space between each input group */
+        }
+        #mainSettingPanel label {
+            width: 100px; /* Set a fixed width for labels to align inputs */
+        }
+        #mainSettingPanel input {
+            flex: 1; /* Allow input to take the remaining space */
+        }
     </style>
 </head>
 <body>
@@ -79,9 +129,56 @@
 
     <div id="dataContainer">
         <div>
-            <h3>設定</h3>
+            <h3>設定パネル</h3>
             <div id="settingPanel">
-                <div
+                <div id="mainSettingPanel">
+                    <div>
+                        <label for="surveyName">調査件名</label>
+                        <input type="text" id="surveyName" value="(サンプル)">
+                    </div>
+                    <div>
+                        <label for="boreholeName">ボーリング名</label>
+                        <input type="text" id="boreholeName" value="(サンプル)">
+                    </div>
+                    <div>
+                        <label for="latitude">緯度 (°)</label>
+                        <input type="number" id="latitude" value="37.448203" min="-90" max="90">
+                    </div>
+                    <div>
+                        <label for="longitude">経度 (°)</label>
+                        <input type="number" id="longitude" value="138.8563762" min="-180" max="180">
+                    </div>
+                    <div>
+                        <label for="holeTopElevation">孔口標高 (m)</label>
+                        <input type="number" id="holeTopElevation" value="10.1">
+                    </div>
+                    <div>
+                        <label for="waterTableElevation">地下水位 (m)</label>
+                        <input type="number" id="waterTableElevation" value="1.5" min="0">
+                    </div>
+                    <div>
+                        <label for="calculationMethod">計算方法</label>
+                        <select id="calculationMethod">
+                            <option value="JRA">道路橋示方書</option>
+                            <option value="AIJ">建築基礎構造設計指針</option>
+                            <option value="IB">Idriss and Boulanger (2008)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="detailSettingPanel" class="tab-menu">
+                    <button class="tab-button" onclick="openTab(event, 'JRA')">道路橋示方書</button>
+                    <button class="tab-button" onclick="openTab(event, 'AIJ')">建築基礎構造設計指針</button>
+                    <button class="tab-button" onclick="openTab(event, 'IB')">Idriss and Boulanger (2008)</button>
+                    <div id="JRA" class="tab-content">
+                        <p>Content for Tab 1</p>
+                    </div>
+                    <div id="AIJ" class="tab-content" style="display:none;">
+                        <p>Content for Tab 2</p>
+                    </div>
+                    <div id="IB" class="tab-content" style="display:none;">
+                        <p>Content for Tab 3</p>
+                    </div>
+                </div>
             </div>
         </div>
         <div>
@@ -161,7 +258,7 @@
         });
 
         const SPTTable = new Tabulator("#SPTTable", {
-            layout: "fitdataTable",
+            layout: "fitDataTable",
             columns: [
                 {title: "深度", field: "SPTDepth", editor: "input", headerSort: false, width: 50},
                 {title: "N値", field: "SPTN", editor: "input", headerSort: false, width: 30},
@@ -232,7 +329,6 @@
         function storeData(xmlDoc) {
             const SPT = xmlDoc.getElementsByTagName('標準貫入試験');
             const soilLayers = xmlDoc.getElementsByTagName('工学的地質区分名現場土質名');
-            console.log(SPT, soilLayers);
             const SPTData = [];
             const soilData = [];
 
@@ -450,6 +546,20 @@
                 // Load sample data if no XML file was loaded
                 loadSampleData();
             }
+        }
+
+        function openTab(evt, tabName) {
+            var i, tabcontent, tabbuttons;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tabbuttons = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
         }
 
         window.onload = loadSampleData;
