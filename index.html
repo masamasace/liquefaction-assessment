@@ -14,13 +14,13 @@
         h3{
             /*横方向の余白のみ20px*/
             margin-left: 10px;
-            margin-bottom: 0px;
+            margin-bottom: 5px;
         }
-        #dataContainer, #chartsContainer, #buttonContainer {
+        #dataContainer, #chartsContainer, #buttonContainer, #settingContainer {
             display: flex;
             margin: 20px;
         }
-        #dataContainer > div {
+        #dataContainer> div {
             display: flex;
             flex-direction: column;
             justify-content: flex-start; /* Align items at the start of the container */
@@ -44,14 +44,17 @@
             overflow-y: auto;
         }
         #mainSettingPanel {
-            max-height: 100px; /* Set the maximum height */
+            height: 200px; /* Set the maximum height */
             overflow-y: auto;  /* Enable vertical scrolling */
             margin: 10px;
+            width: 400px;
         }
         #detailSettingPanel {
             overflow-x: auto;
             overflow-y: auto;
             white-space: nowrap; /* Prevent line breaks and allow horizontal scrolling */
+            width: 400px;
+            height: 200px;
         }
         #detailSettingPanel > div {
             margin: 10px; /* Add spacing between setting subpanels */
@@ -101,6 +104,24 @@
             border-top: none;
         }
 
+        .tab-content > div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .tab-content > div > label {
+            width: 70px;
+        }
+
+        .tab-content > div > input {
+            flex: 0.9;
+        }
+        .tab-content > div > select {
+            flex: 0.9;
+        }
+        .tab-content > div > 
+
         .active {
             background-color: #ccc;
         }
@@ -114,7 +135,12 @@
             width: 100px; /* Set a fixed width for labels to align inputs */
         }
         #mainSettingPanel input {
-            flex: 1; /* Allow input to take the remaining space */
+            flex: 0.9; /* Allow input to take the remaining space */
+        }
+
+        .toggle-button.active {
+            background-color: #4CAF50; /* Green background when active */
+            color: white; /* White text when active */
         }
     </style>
 </head>
@@ -126,61 +152,124 @@
         <button id="loadSampleData">Load Sample Data</button>
         <button id="resetData">Reset</button>
     </div>
-
-    <div id="dataContainer">
+    <div id="settingContainer">
         <div>
-            <h3>設定パネル</h3>
-            <div id="settingPanel">
-                <div id="mainSettingPanel">
-                    <div>
-                        <label for="surveyName">調査件名</label>
-                        <input type="text" id="surveyName" value="(サンプル)">
-                    </div>
-                    <div>
-                        <label for="boreholeName">ボーリング名</label>
-                        <input type="text" id="boreholeName" value="(サンプル)">
-                    </div>
-                    <div>
-                        <label for="latitude">緯度 (°)</label>
-                        <input type="number" id="latitude" value="37.448203" min="-90" max="90">
-                    </div>
-                    <div>
-                        <label for="longitude">経度 (°)</label>
-                        <input type="number" id="longitude" value="138.8563762" min="-180" max="180">
-                    </div>
-                    <div>
-                        <label for="holeTopElevation">孔口標高 (m)</label>
-                        <input type="number" id="holeTopElevation" value="10.1">
-                    </div>
-                    <div>
-                        <label for="waterTableElevation">地下水位 (m)</label>
-                        <input type="number" id="waterTableElevation" value="1.5" min="0">
-                    </div>
-                    <div>
-                        <label for="calculationMethod">計算方法</label>
-                        <select id="calculationMethod">
-                            <option value="JRA">道路橋示方書</option>
-                            <option value="AIJ">建築基礎構造設計指針</option>
-                            <option value="IB">Idriss and Boulanger (2008)</option>
-                        </select>
-                    </div>
+            <h3>基本設定</h3>
+            <div id="mainSettingPanel">
+                <div>
+                    <label for="surveyName">調査件名</label>
+                    <input type="text" id="surveyName" value="(サンプル)">
                 </div>
-                <div id="detailSettingPanel" class="tab-menu">
-                    <button class="tab-button" onclick="openTab(event, 'JRA')">道路橋示方書</button>
-                    <button class="tab-button" onclick="openTab(event, 'AIJ')">建築基礎構造設計指針</button>
-                    <button class="tab-button" onclick="openTab(event, 'IB')">Idriss and Boulanger (2008)</button>
-                    <div id="JRA" class="tab-content">
-                        <p>Content for Tab 1</p>
-                    </div>
-                    <div id="AIJ" class="tab-content" style="display:none;">
-                        <p>Content for Tab 2</p>
-                    </div>
-                    <div id="IB" class="tab-content" style="display:none;">
-                        <p>Content for Tab 3</p>
-                    </div>
+                <div>
+                    <label for="boreholeName">ボーリング名</label>
+                    <input type="text" id="boreholeName" value="(サンプル)">
+                </div>
+                <div>
+                    <label for="latitude">緯度 (°)</label>
+                    <input type="number" id="latitude" value="37.448203" min="-90" max="90">
+                </div>
+                <div>
+                    <label for="longitude">経度 (°)</label>
+                    <input type="number" id="longitude" value="138.8563762" min="-180" max="180">
+                </div>
+                <div>
+                    <label for="holeTopElevation">孔口標高 (m)</label>
+                    <input type="number" id="holeTopElevation" value="10.1">
+                </div>
+                <div>
+                    <label for="waterTableElevation">地下水位 (m)</label>
+                    <input type="number" id="waterTableElevation" value="1.5" min="0">
+                </div>
+                <div>
+                    <label for="calculationMethod">計算方法</label>
+                    <select id="calculationMethod">
+                        <option value="JRA">道路橋示方書</option>
+                        <option value="AIJ">建築基礎構造設計指針</option>
+                        <option value="IB">Idriss and Boulanger (2008)</option>
+                    </select>
                 </div>
             </div>
         </div>
+        <div>
+            <h3>詳細設定</h3>
+            <div id="detailSettingPanel" class="tab-menu">
+                <button class="tab-button active" onclick="openTab(event, 'JRA')">道路橋示方書</button>
+                <button class="tab-button" onclick="openTab(event, 'AIJ')">建築基礎構造設計指針</button>
+                <button class="tab-button" onclick="openTab(event, 'IB')">Idriss and Boulanger (2008)</button>
+                <div id="JRA" class="tab-content" style="display: block;">
+                    <div>
+                        <label>
+                            <input type="checkbox" id="toggleJRA_N" class="toggle-input">
+                            <span class="toggle-button">水平震度の直接入力</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label for="JRA_kh">水平震度</label>
+                        <input type="number" id="JRA_kh" value="0.1">
+                    </div>
+                    <div>
+                        <label for="JRA_year">年度</label>
+                        <select id="JRA_year">
+                            <option value="2017">H29 (2017)</option>
+                            <option value="2012">H24 (2012)</option>
+                            <option value="2007">H19 (2007)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="JRA_region">地域区分</label>
+                        <select id="JRA_region">
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="B1">B1</option>
+                            <option value="B2">B2</option>
+                            <option value="C">1</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="JRA_Cz">Cz</label>
+                        <input type="number" id="JRA_Cz" value="1.0">
+                    </div>
+                    <div>
+                        <label for="JRA_C1z">C1z</label>
+                        <input type="number" id="JRA_C1z" value="1.2">
+                    </div>
+                    <div>
+                        <label for="JRA_C2z">C2z</label>
+                        <input type="number" id="JRA_C2z" value="1.0">
+                    </div>
+                    <div>
+                        <label for="JRA_groundType">地盤種別</label>
+                        <select id="JRA_groundType">
+                            <option value="1">Ⅰ種地盤</option>
+                            <option value="2">Ⅱ種地盤</option>
+                            <option value="3">Ⅲ種地盤</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="JRA_level">レベル</label>
+                        <select id="JRA_level">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="JRA_type">タイプ</label>
+                        <select id="JRA_type">
+                            <option value="1">Ⅰ</option>
+                            <option value="2">Ⅱ</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="AIJ" class="tab-content" style="display:none;">
+                    <p>Content for Tab 2</p>
+                </div>
+                <div id="IB" class="tab-content" style="display:none;">
+                    <p>Content for Tab 3</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="dataContainer">
         <div>
             <h3>土質データ</h3>
             <div id="soilTable"></div>
@@ -269,7 +358,17 @@
                 {title: "D50", field: "d50", editor: "input", headerSort: false, width: 75},
                 {title: "Ip", field: "plasticityIndex", editor: "input", headerSort: false, width: 50},
                 {title: "RL", field: "liquefactionResistance", editor: "input", headerSort: false, width: 50},
-                {title: "FL判定", field: "flManifestFlag", editor: "input", headerSort: false, width: 75}
+                {title: "σv", field: "sigmaV", editor: "input", headerSort: false, width: 75},
+                {title: "σv'", field: "sigmaVPrime", editor: "input", headerSort: false, width: 75},
+                {title: "rd", field: "rd", editor: "input", headerSort: false, width: 75},
+                {title: "N1", field: "n1", editor: "input", headerSort: false, width: 75},
+                {title: "CFC", field: "cfc", editor: "input", headerSort: false, width: 75},
+                {title: "Na", field: "na", editor: "input", headerSort: false, width: 75},
+                {title: "RL", field: "rl", editor: "input", headerSort: false, width: 75},
+                {title: "Cw", field: "cw", editor: "input", headerSort: false, width: 75},
+                {title: "L", field: "load", editor: "input", headerSort: false, width: 75},
+                {title: "R", field: "resistance", editor: "input", headerSort: false, width: 75},
+                {title: "FL", field: "fl", editor: "input", headerSort: false, width: 75},
             ],
             data: [],
 
@@ -393,7 +492,7 @@
         function checkUpperDepth(data) {
             for (let i = 1; i < data.length; i++) {
                 if (parseFloat(data[i].lowerDepth) < parseFloat(data[i - 1].lowerDepth)) {
-                    alert("土質データの下端深度が前の土質データの下端深度よりも小さいです。元の値に戻します。");
+                    alert("土質データの下端深度が前の土質データの下端度よりも小さいで。元の値に戻します。");
                     data[i - 1].lowerDepth = parseFloat(data[i -2].lowerDepth) + parseFloat(data[i - 1].layerThickness);
                 }
             }
