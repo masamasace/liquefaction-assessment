@@ -9,10 +9,9 @@
     <script src="https://unpkg.com/tabulator-tables@5.2.7/dist/js/tabulator.min.js"></script>
     <style>
         body {
-            font-family: sans-serif; /* Set default font to sans-serif */
+            font-family: sans-serif;
         }
-        h3{
-            /*横方向の余白のみ20px*/
+        h3 {
             margin-left: 10px;
             margin-bottom: 5px;
         }
@@ -20,57 +19,36 @@
             display: flex;
             margin: 20px;
         }
-        #dataContainer> div {
+        #dataContainer > div {
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Align items at the start of the container */
-            height: 350px; /* Set a consistent height for both table containers */
+            justify-content: flex-start;
+            height: 350px;
         }
-        #SPTChart {
+        #SPTChart, #soilColumnChart, #settingPanel, #mainSettingPanel, #detailSettingPanel, #soilTable, #SPTTable, #dropZone {
             margin: 10px;
+        }
+        #SPTChart, #soilColumnChart {
             max-width: 200px;
             max-height: 400px;
         }
-        #soilColumnChart {
-            margin: 10px;
-            max-width: 75px;
-            max-height: 400px;
-        }
-        #settingPanel {
-            margin: 10px;
+        #settingPanel, #soilTable, #SPTTable {
             width: 400px;
             height: 300px;
-            overflow-x: auto;
-            overflow-y: auto;
+            overflow: auto;
         }
-        #mainSettingPanel {
-            height: 200px; /* Set the maximum height */
-            overflow-y: auto;  /* Enable vertical scrolling */
-            margin: 10px;
-            width: 400px;
-        }
-        #detailSettingPanel {
-            overflow-x: auto;
-            overflow-y: auto;
-            white-space: nowrap; /* Prevent line breaks and allow horizontal scrolling */
+        #mainSettingPanel, #detailSettingPanel {
             width: 400px;
             height: 200px;
+            overflow-y: auto;
         }
         #detailSettingPanel > div {
-            margin: 10px; /* Add spacing between setting subpanels */
-        }
-        #soilTable, #SPTTable {
             margin: 10px;
-            width: 400px;
-            height: 300px;
-            overflow-x: auto;
-            overflow-y: auto;
         }
         #dropZone {
             border: 2px dashed #ccc;
             padding: 20px;
             text-align: center;
-            margin: 20px;
             cursor: pointer;
         }
         #dropZone.dragover {
@@ -80,10 +58,10 @@
             margin: 10px;
         }
         .no-edit-cell-text {
-            color: #a0a0a0; /* Change this to your desired text color */
+            color: #a0a0a0;
         }
         #buttonContainer button {
-            margin-right: 10px; /* Add spacing between buttons */
+            margin-right: 10px;
         }
         .tab-button {
             background-color: #f1f1f1;
@@ -91,56 +69,44 @@
             cursor: pointer;
             padding: 5px;
             transition: 0.3s;
-            height: 30px; /* Adjust the height as needed */
+            height: 30px;
         }
-
         .tab-button:hover {
             background-color: #ddd;
         }
-
         .tab-content {
             display: none;
             padding: 10px;
             border-top: none;
         }
-
         .tab-content > div {
             display: flex;
             align-items: center;
             margin-bottom: 5px;
         }
-
         .tab-content > div > label {
             width: 70px;
         }
-
-        .tab-content > div > input {
+        .tab-content > div > input, .tab-content > div > select {
             flex: 0.9;
         }
-        .tab-content > div > select {
-            flex: 0.9;
-        }
-        .tab-content > div > 
-
         .active {
             background-color: #ccc;
         }
-
         #mainSettingPanel div {
             display: flex;
             align-items: center;
-            margin-bottom: 5px; /* Add some space between each input group */
+            margin-bottom: 5px;
         }
         #mainSettingPanel label {
-            width: 100px; /* Set a fixed width for labels to align inputs */
+            width: 100px;
         }
         #mainSettingPanel input {
-            flex: 0.9; /* Allow input to take the remaining space */
+            flex: 0.9;
         }
-
         .toggle-button.active {
-            background-color: #4CAF50; /* Green background when active */
-            color: white; /* White text when active */
+            background-color: #4CAF50;
+            color: white;
         }
     </style>
 </head>
@@ -342,9 +308,7 @@
             ],
             data: [],
         });
-        soilTable.on("dataChanged", function(data) {
-            updateTableAndChart();
-        });
+        soilTable.on("dataChanged", updateTableAndChart);
 
         const SPTTable = new Tabulator("#SPTTable", {
             layout: "fitDataTable",
@@ -371,11 +335,8 @@
                 {title: "FL", field: "fl", editor: "input", headerSort: false, width: 75},
             ],
             data: [],
-
         });
-        SPTTable.on("dataChanged", function(data) {
-            updateTableAndChart();
-        });
+        SPTTable.on("dataChanged", updateTableAndChart);
 
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         document.getElementById('loadSampleData').addEventListener('click', loadSampleData);
@@ -395,13 +356,13 @@
             if (file) processFile(file);
         });
 
+        let originalSPTData = [];
+        let originalSoilData = [];
+
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) processFile(file);
         }
-
-        let originalSPTData = [];
-        let originalSoilData = [];
 
         function processFile(file) {
             const reader = new FileReader();
@@ -409,7 +370,7 @@
                 const content = decodeFileContent(e.target.result);
                 const xmlDoc = parseXML(content);
                 storeData(xmlDoc);
-                updateTableAndChart(isUpdateOriginal=true);
+                updateTableAndChart(true);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -431,46 +392,23 @@
             const SPTData = [];
             const soilData = [];
 
-            // check if there are tags of 標準貫入試験_開始深度 and 上限深度
-            if (SPT.length === 0) {
-                alert("XMLファイルに標準貫入試験データがありません。サンプルデータを読み込みます。");
+            if (SPT.length === 0 || soilLayers.length === 0) {
+                alert("XMLファイルに必要なデータがありません。サンプルデータを読み込みます。");
                 loadSampleData();
                 return;
             }
-            else if (soilLayers.length === 0) {
-                alert("XMLファイルに土質データデータがありません。サンプルデータを読み込みます。");
-                loadSampleData();
-                return;
-            }
-            else {
-                for (let i = 0; i < SPT.length; i++) {
+
+            for (let i = 0; i < SPT.length; i++) {
                 const SPTDepth = parseFloat(SPT[i].getElementsByTagName('標準貫入試験_開始深度')[0].textContent);
                 const SPTN = SPT[i].getElementsByTagName('標準貫入試験_合計打撃回数')[0].textContent;
-
                 SPTData.push({SPTDepth, SPTN});
-                }
+            }
 
-                // check if there are tags of 工学的地質区分名現場土質名_下端深度
-                if (soilLayers[0].getElementsByTagName('工学的地質区分名現場土質名_下端深度').length === 0) {
-                    alert("XMLファイルに下端深度データがありません。サンプルデータを読み込みます。");
-                    loadSampleData();
-                    return;
-                }
-
-                for (let i = 0; i < soilLayers.length; i++) {
-                    const lowerDepth = parseFloat(soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_下端深度')[0].textContent);
-                    
-                    let layerThickness;
-                    if (i === 0) {
-                        layerThickness = lowerDepth;
-                    }
-                    else {
-                        layerThickness = lowerDepth - soilData[i - 1].lowerDepth;
-                    }
-                    const soilType = soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_工学的地質区分名現場土質名')[0].textContent;
-
-                    soilData.push({lowerDepth, layerThickness, soilType});
-                }
+            for (let i = 0; i < soilLayers.length; i++) {
+                const lowerDepth = parseFloat(soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_下端深度')[0].textContent);
+                const layerThickness = i === 0 ? lowerDepth : lowerDepth - soilData[i - 1].lowerDepth;
+                const soilType = soilLayers[i].getElementsByTagName('工学的地質区分名現場土質名_工学的地質区分名現場土質名')[0].textContent;
+                soilData.push({lowerDepth, layerThickness, soilType});
             }
 
             SPTTable.setData(SPTData);
@@ -478,87 +416,60 @@
         }
 
         function calculateLayerThickness(data) {
-            for (let i = 0; i < data.length; i++) {
-                if (i === 0) {
-                    data[i].layerThickness = parseFloat(data[i].lowerDepth);
-                }
-                else {
-                    data[i].layerThickness = parseFloat(data[i].lowerDepth) - parseFloat(data[i - 1].lowerDepth);
-                }
-            }
+            data.forEach((item, index) => {
+                item.layerThickness = index === 0 ? parseFloat(item.lowerDepth) : parseFloat(item.lowerDepth) - parseFloat(data[index - 1].lowerDepth);
+            });
             soilTable.setData(data);
         }
 
         function checkUpperDepth(data) {
             for (let i = 1; i < data.length; i++) {
                 if (parseFloat(data[i].lowerDepth) < parseFloat(data[i - 1].lowerDepth)) {
-                    alert("土質データの下端深度が前の土質データの下端度よりも小さいで。元の値に戻します。");
-                    data[i - 1].lowerDepth = parseFloat(data[i -2].lowerDepth) + parseFloat(data[i - 1].layerThickness);
+                    alert("土質データの下端深度が前の土質データの下端度よりも小さいです。元の値に戻します。");
+                    data[i - 1].lowerDepth = parseFloat(data[i - 2].lowerDepth) + parseFloat(data[i - 1].layerThickness);
                 }
             }
             soilTable.setData(data);
         }
 
         function insertSoilDataToSPTData(SPTData, soilData, i, j) {
-            SPTData[i].soilType = soilData[j].soilType;
-            SPTData[i].wetUnitWeight = soilData[j].wetUnitWeight;
-            SPTData[i].satUnitWeight = soilData[j].satUnitWeight;
-            SPTData[i].fineContent = soilData[j].fineContent;
-            SPTData[i].d50 = soilData[j].d50;
-            SPTData[i].plasticityIndex = soilData[j].plasticityIndex;
-            SPTData[i].liquefactionResistance = soilData[j].liquefactionResistance;
-            SPTData[i].flManifestFlag = soilData[j].flManifestFlag;
+            const fields = ["soilType", "wetUnitWeight", "satUnitWeight", "fineContent", "d50", "plasticityIndex", "liquefactionResistance", "flManifestFlag"];
+            fields.forEach(field => SPTData[i][field] = soilData[j][field]);
         }
 
         function calculateSPTChartValues(SPTData, soilData) {
-            for (let i = 0; i < SPTData.length; i++) {
-                for (let j = 0; j < soilData.length; j++) {
-                    if (j === 0) {
-                        if (SPTData[i].SPTDepth <= soilData[j].lowerDepth) {
-                            insertSoilDataToSPTData(SPTData, soilData, i, j);
-                            break;
-                        }
+            SPTData.forEach((spt, i) => {
+                soilData.some((soil, j) => {
+                    if (spt.SPTDepth <= soil.lowerDepth && (j === 0 || spt.SPTDepth > soilData[j - 1].lowerDepth)) {
+                        insertSoilDataToSPTData(SPTData, soilData, i, j);
+                        return true;
                     }
-                    else {
-                        if (SPTData[i].SPTDepth <= soilData[j].lowerDepth && SPTData[i].SPTDepth > soilData[j - 1].lowerDepth) {
-                            insertSoilDataToSPTData(SPTData, soilData, i, j);
-                            break;
-                        }
-                    }
-                }
-            }
+                    return false;
+                });
+            });
             SPTTable.setData(SPTData);
             SPTChart.update();
         }
 
-        function updateTableAndChart(isUpdateOriginal=false) {
+        function updateTableAndChart(isUpdateOriginal = false) {
             const SPTData = SPTTable.getData();
             const soilData = soilTable.getData();
 
-            // update layer thickness
             checkUpperDepth(soilData);
             calculateLayerThickness(soilData);
-
-            // update SPT chart values
             calculateSPTChartValues(SPTData, soilData);
 
-            console.log(SPTData);
-
-            // update original data
             if (isUpdateOriginal) {
                 originalSPTData = structuredClone(SPTData);
                 originalSoilData = structuredClone(soilData);
             }
 
-            // Update max depth
             maxDepth = Math.max(maxDepth, soilData[soilData.length - 1].lowerDepth, SPTData[SPTData.length - 1].SPTDepth);
 
-            // Update SPT chart
             SPTDataForChart.datasets[0].data = SPTData.map(d => ({x: d.SPTN, y: d.SPTDepth}));
             SPTChart.options.scales.y.max = maxDepth;
             SPTChart.update();
 
-            // Update soil column chart
             chartDataSoilType.datasets = soilData.map(data => ({
                 label: data.soilType,
                 data: [data.layerThickness],
@@ -621,42 +532,35 @@
             SPTTable.setData(sampleSPTData);
             soilTable.setData(sampleSoilData);
 
-            updateTableAndChart(isUpdateOriginal=true);
+            updateTableAndChart(true);
         }
 
         function resetData() {
             if (originalSPTData.length > 0 && originalSoilData.length > 0) {
-                // Revert to original data if XML file was loaded
                 SPTTable.setData(originalSPTData);
                 soilTable.setData(originalSoilData);
 
                 SPTDataForChart.datasets[0].data = originalSPTData.map(d => ({x: d.SPTN, y: d.SPTDepth}));
                 SPTChart.update();
 
-                const originalSoilDatasetsForChart = originalSoilData.map(data => ({
+                chartDataSoilType.datasets = originalSoilData.map(data => ({
                     label: data.soilType,
                     data: [data.layerThickness],
                     backgroundColor: [color_list[data.soilType]]
                 }));
-
-                chartDataSoilType.datasets = originalSoilDatasetsForChart;
                 soilColumnChart.update();
             } else {
-                // Load sample data if no XML file was loaded
                 loadSampleData();
             }
         }
 
         function openTab(evt, tabName) {
-            var i, tabcontent, tabbuttons;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tabbuttons = document.getElementsByClassName("tab-button");
-            for (i = 0; i < tabbuttons.length; i++) {
-                tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
-            }
+            const tabcontent = document.getElementsByClassName("tab-content");
+            Array.from(tabcontent).forEach(content => content.style.display = "none");
+
+            const tabbuttons = document.getElementsByClassName("tab-button");
+            Array.from(tabbuttons).forEach(button => button.className = button.className.replace(" active", ""));
+
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
