@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Import Borehole Data</title>
+    <title>液状化判定シート</title>
     <link href="https://unpkg.com/tabulator-tables@5.2.7/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/tabulator-tables@5.2.7/dist/js/tabulator.min.js"></script>
@@ -28,7 +28,11 @@
         #SPTChart, #soilColumnChart, #settingPanel, #mainSettingPanel, #detailSettingPanel, #soilTable, #SPTTable, #dropZone {
             margin: 10px;
         }
-        #SPTChart, #soilColumnChart {
+        #soilColumnChart {
+            max-width: 100px;
+            max-height: 400px;
+        }
+        #SPTChart {
             max-width: 200px;
             max-height: 400px;
         }
@@ -44,6 +48,7 @@
         }
         #detailSettingPanel > div {
             margin: 10px;
+            
         }
         #dropZone {
             border: 2px dashed #ccc;
@@ -63,6 +68,12 @@
         #buttonContainer button {
             margin-right: 10px;
         }
+        .tab-menu {
+            overflow-x: auto;
+            white-space: nowrap;
+            max-width: 100%;
+            margin-bottom: 0;
+        }
         .tab-button {
             background-color: #f1f1f1;
             border: none;
@@ -70,14 +81,18 @@
             padding: 5px;
             transition: 0.3s;
             height: 30px;
+            flex: 0 0 auto;
         }
         .tab-button:hover {
             background-color: #ddd;
         }
+        .tab-button.active {
+            background-color: #ccc;
+        }
         .tab-content {
-            display: none;
             padding: 10px;
             border-top: none;
+            margin-top: 0;
         }
         .tab-content > div {
             display: flex;
@@ -117,6 +132,7 @@
     <div id="buttonContainer">
         <button id="loadSampleData">Load Sample Data</button>
         <button id="resetData">Reset</button>
+        <button id="exportCSV">Export to CSV</button>
     </div>
     <div id="settingContainer">
         <div>
@@ -266,6 +282,8 @@
         const chartDataSoilType = { labels: [""], datasets: [] };
         const SPTDataForChart = { datasets: [{ label: 'Depth vs 2N', data: [], borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', borderWidth: 3, showLine: true, pointRadius: 0 }] };
 
+        const gravityAcceleration = 9.81;
+        const waterUnitWeight = gravityAcceleration;
         let maxDepth = 10;
 
         const soilColumnChart = new Chart(ctxSoilType, {
@@ -294,6 +312,11 @@
 
         const soilTable = new Tabulator("#soilTable", {
             layout: "fitDataTable",
+            clipboard: true,
+            clipboardCopyConfig: {
+                columnHeaders: true,
+            },
+            clipboardPasteAction: "replace",
             columns: [
                 {title: "下端深度", field: "lowerDepth", editor: "input", headerSort: false, width: 75},
                 {title: "層厚", field: "layerThickness", headerSort: false, cssClass: "no-edit-cell-text", width: 75, formatter: "money", formatterParams: { precision: 2 }},
@@ -312,6 +335,11 @@
 
         const SPTTable = new Tabulator("#SPTTable", {
             layout: "fitDataTable",
+            clipboard: true,
+            clipboardCopyConfig: {
+                columnHeaders: true,
+            },
+            clipboardPasteAction: "replace",
             columns: [
                 {title: "深度", field: "SPTDepth", editor: "input", headerSort: false, width: 50},
                 {title: "N値", field: "SPTN", editor: "input", headerSort: false, width: 30},
@@ -322,9 +350,9 @@
                 {title: "D50", field: "d50", editor: "input", headerSort: false, width: 75},
                 {title: "Ip", field: "plasticityIndex", editor: "input", headerSort: false, width: 50},
                 {title: "RL", field: "liquefactionResistance", editor: "input", headerSort: false, width: 50},
-                {title: "σv", field: "sigmaV", editor: "input", headerSort: false, width: 75},
-                {title: "σv'", field: "sigmaVPrime", editor: "input", headerSort: false, width: 75},
-                {title: "rd", field: "rd", editor: "input", headerSort: false, width: 75},
+                {title: "σv", field: "sigmaV", editor: "input", headerSort: false, width: 75, formatter: "money", formatterParams: { precision: 2 }},
+                {title: "σv'", field: "sigmaVPrime", editor: "input", headerSort: false, width: 75, formatter: "money", formatterParams: { precision: 2 }},
+                {title: "rd", field: "rd", editor: "input", headerSort: false, width: 75, formatter: "money", formatterParams: { precision: 4 }},
                 {title: "N1", field: "n1", editor: "input", headerSort: false, width: 75},
                 {title: "CFC", field: "cfc", editor: "input", headerSort: false, width: 75},
                 {title: "Na", field: "na", editor: "input", headerSort: false, width: 75},
@@ -341,6 +369,7 @@
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         document.getElementById('loadSampleData').addEventListener('click', loadSampleData);
         document.getElementById('resetData').addEventListener('click', resetData);
+        document.getElementById('exportCSV').addEventListener('click', exportCSV);
 
         const dropZone = document.getElementById('dropZone');
         dropZone.addEventListener('click', () => document.getElementById('fileInput').click());
@@ -437,6 +466,112 @@
             fields.forEach(field => SPTData[i][field] = soilData[j][field]);
         }
 
+        function getWaterTableElevation() {
+            return parseFloat(document.getElementById("waterTableElevation").value);
+        }
+
+        function calculateIncrementalSigmaV(soil, upperDepth, lowerDepth, waterTableElevation) {
+            if (lowerDepth <= waterTableElevation) {
+                return soil.wetUnitWeight * (lowerDepth - upperDepth);
+            } else if (waterTableElevation <= upperDepth) {
+                return soil.satUnitWeight * (lowerDepth - upperDepth);
+            } else {
+                return soil.wetUnitWeight * (waterTableElevation - upperDepth) + soil.satUnitWeight * (lowerDepth - waterTableElevation);
+            }
+        }
+
+        function calculateIncrementalSigmaVPrime(soil, upperDepth, lowerDepth, waterTableElevation) {
+            if (lowerDepth <= waterTableElevation) {
+                return (soil.satUnitWeight - waterUnitWeight) * (lowerDepth - upperDepth);
+            } else if (waterTableElevation <= upperDepth) {
+                return (soil.wetUnitWeight) * (lowerDepth - upperDepth);
+            } else {
+                return soil.wetUnitWeight * (waterTableElevation - upperDepth) + (soil.satUnitWeight - waterUnitWeight) * (lowerDepth - waterTableElevation);
+            }
+        }
+
+        function calculateStress(SPTData, soilData, i) {
+            const waterTableElevation = getWaterTableElevation();
+            const depth = SPTData[i].SPTDepth;
+            
+            let sigmaV = 0;
+            let sigmaVPrime = 0;
+
+            for (let j = 0; j < soilData.length; j++) {
+                if (depth < soilData[j].lowerDepth) {
+                    if (j === 0) {
+                        sigmaV += calculateIncrementalSigmaV(soilData[j], 0, depth, waterTableElevation);
+                        sigmaVPrime += calculateIncrementalSigmaVPrime(soilData[j], 0, depth, waterTableElevation);
+                    }
+                    else if (soilData[j - 1].lowerDepth < depth) {
+                        sigmaV += calculateIncrementalSigmaV(soilData[j], soilData[j - 1].lowerDepth, depth, waterTableElevation);
+                        sigmaVPrime += calculateIncrementalSigmaVPrime(soilData[j], soilData[j - 1].lowerDepth, depth, waterTableElevation);
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (j === 0) {
+                        sigmaV += calculateIncrementalSigmaV(soilData[j], 0, soilData[j].lowerDepth, waterTableElevation);
+                        sigmaVPrime += calculateIncrementalSigmaVPrime(soilData[j], 0, soilData[j].lowerDepth, waterTableElevation);
+                    } else {
+                        sigmaV += calculateIncrementalSigmaV(soilData[j], soilData[j - 1].lowerDepth, soilData[j].lowerDepth, waterTableElevation);
+                        sigmaVPrime += calculateIncrementalSigmaVPrime(soilData[j], soilData[j - 1].lowerDepth, soilData[j].lowerDepth, waterTableElevation);
+                    }
+                }
+            }
+            SPTData[i].sigmaV = sigmaV;
+            SPTData[i].sigmaVPrime = sigmaVPrime;
+        }
+
+        function calculateRd(SPTData, i) {
+            SPTData[i].rd = 1 - 0.015 * SPTData[i].SPTDepth;
+        }
+
+        function calculateN1(SPTData, i) {
+            SPTData[i].n1 = 170 * SPTData[i].SPTN / (SPTData[i].sigmaVPrime + 70);
+        }
+
+        function calculateCfc(SPTData, i) {
+            if (SPTData[i].fineContent <= 10) {
+                SPTData[i].cfc = 1;
+            } else if (SPTData[i].fineContent <= 40) {
+                SPTData[i].cfc = (SPTData[i].fineContent + 20) / 30;
+            } else {
+                SPTData[i].cfc = (SPTData[i].fineContent - 16) / 12;
+            }
+        }
+
+        function calculateNa(SPTData, i) {
+            SPTData[i].na = SPTData[i].cfc * (SPTData[i].n1 + 2.47) - 2.47;
+        }
+
+        function calculateRl(SPTData, i) {
+            if (SPTData[i].na < 14) {
+                SPTData[i].rl = 0.0882 * ((0.85 * SPTData[i].na + 2.1) / 1.7) ** (1/2);
+            } else {
+                SPTData[i].rl = 0.0882 * (SPTData[i].na / 1.7) ** (1/2) + 1.6 * 10 ** -6 * (SPTData[i].na - 14) ** 4.5;
+            }
+        }
+
+        function getEQLevel() {
+            console.log(document.getElementById("JRA_level").value);
+            return parseFloat(document.getElementById("JRA_level").value);
+        }
+
+        function getEQType() {
+            console.log(document.getElementById("JRA_type").value);
+            return document.getElementById("JRA_type").value;
+        }
+
+        function calculateCw(SPTData, i) {
+            const EQLevel = getEQLevel();
+            const EQType = getEQType();
+
+            if (EQLevel === 1) {
+                SPTData[i].
+            }
+        }
+
         function calculateSPTChartValues(SPTData, soilData) {
             SPTData.forEach((spt, i) => {
                 soilData.some((soil, j) => {
@@ -446,7 +581,16 @@
                     }
                     return false;
                 });
+                calculateStress(SPTData, soilData, i);
+                calculateRd(SPTData, i);
+                calculateN1(SPTData, i);
+                calculateCfc(SPTData, i);
+                calculateNa(SPTData, i);
+                calculateRl(SPTData, i);
+                calculateCw(SPTData, i);
+
             });
+
             SPTTable.setData(SPTData);
             SPTChart.update();
         }
@@ -509,23 +653,23 @@
             ];
 
             const sampleSoilData = [
-                {lowerDepth: 1, layerThickness: 1, soilType: "表土", wetUnitWeight: 1.6, 
-                satUnitWeight: 1.75, fineContent: 80, d50: 0.002, plasticityIndex: 40, 
+                {lowerDepth: 1, layerThickness: 1, soilType: "表土", wetUnitWeight: 16, 
+                satUnitWeight: 17.5, fineContent: 80, d50: 0.002, plasticityIndex: 40, 
                 liquefactionResistance: 0.9, flManifestFlag: false},
-                {lowerDepth: 4.5, layerThickness: 3.5, soilType: "砂", wetUnitWeight: 1.8, 
-                satUnitWeight: 1.95, fineContent: 10, d50: 0.02, plasticityIndex: 0, 
+                {lowerDepth: 4.5, layerThickness: 3.5, soilType: "砂", wetUnitWeight: 18, 
+                satUnitWeight: 19.5, fineContent: 10, d50: 0.02, plasticityIndex: 0, 
                 liquefactionResistance: 0.25, flManifestFlag: true},
-                {lowerDepth: 7, layerThickness: 2.5, soilType: "シルト", wetUnitWeight: 1.7, 
-                satUnitWeight: 1.8, fineContent: 40, d50: 0.008, plasticityIndex: 10, 
+                {lowerDepth: 7, layerThickness: 2.5, soilType: "シルト", wetUnitWeight: 17, 
+                satUnitWeight: 18, fineContent: 40, d50: 0.008, plasticityIndex: 10, 
                 liquefactionResistance: 0.2, flManifestFlag: true},
-                {lowerDepth: 11, layerThickness: 4, soilType: "砂", wetUnitWeight: 1.8, 
-                satUnitWeight: 1.95, fineContent: 15, d50: 0.03, plasticityIndex: 0, 
+                {lowerDepth: 11, layerThickness: 4, soilType: "砂", wetUnitWeight: 18, 
+                satUnitWeight: 19.5, fineContent: 15, d50: 0.03, plasticityIndex: 0, 
                 liquefactionResistance: 0.3, flManifestFlag: true},
-                {lowerDepth: 13, layerThickness: 2, soilType: "粘土", wetUnitWeight: 1.5, 
-                satUnitWeight: 1.7, fineContent: 90, d50: 0.0025, plasticityIndex: 40, 
+                {lowerDepth: 13, layerThickness: 2, soilType: "粘土", wetUnitWeight: 15, 
+                satUnitWeight: 17, fineContent: 90, d50: 0.0025, plasticityIndex: 40, 
                 liquefactionResistance: 0.9, flManifestFlag: false},
-                {lowerDepth: 25, layerThickness: 12, soilType: "礫", wetUnitWeight: 2, 
-                satUnitWeight: 2.1, fineContent: 0, d50: 2.5, plasticityIndex: 1, 
+                {lowerDepth: 25, layerThickness: 12, soilType: "礫", wetUnitWeight: 20, 
+                satUnitWeight: 21, fineContent: 0, d50: 2.5, plasticityIndex: 1, 
                 liquefactionResistance: 0.5, flManifestFlag: true}
             ];
 
@@ -563,6 +707,11 @@
 
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
+        }
+
+        function exportCSV() {
+            soilTable.download("csv", "soil_data.csv");
+            SPTTable.download("csv", "spt_data.csv");
         }
 
         window.onload = loadSampleData;
