@@ -2,3 +2,5 @@
 *.xml
 *.XML
 *.pdf
+main.py
+.pyc
