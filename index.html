@@ -567,9 +567,31 @@
             const EQLevel = getEQLevel();
             const EQType = getEQType();
 
-            if (EQLevel === 1) {
-                SPTData[i].
+            if (EQLevel === 1 || (EQLevel === 2 && EQType === 1)) {
+                SPTData[i].cw = 1;
+            } else {
+                if (SPTData[i].rl <= 0.1) {
+                    SPTData[i].cw = 1;
+                } else if (SPTData[i].rl > 0.4) {
+                    SPTData[i].cw = 2;
+                } else {
+                    SPTData[i].cw = 3.3 * SPTData[i].rl + 0.67;
+                }
             }
+        }
+
+        function calculateL(SPTData, i) {
+
+            const JRA_kh = parseFloat(document.getElementById("JRA_kh").value);
+            SPTData[i].load = SPTData[i].rd * JRA_kh * SPTData[i].sigmaV / SPTData[i].sigmaVPrime;
+        }
+
+        function calculateResistance(SPTData, i) {
+            SPTData[i].resistance = SPTData[i].rl * SPTData[i].cw;
+        }
+
+        function calculateFL(SPTData, i) {
+            SPTData[i].fl = SPTData[i].resistance / SPTData[i].load;3
         }
 
         function calculateSPTChartValues(SPTData, soilData) {
@@ -588,6 +610,9 @@
                 calculateNa(SPTData, i);
                 calculateRl(SPTData, i);
                 calculateCw(SPTData, i);
+                calculateL(SPTData, i);
+                calculateResistance(SPTData, i);
+                calculateFL(SPTData, i);
 
             });
 
