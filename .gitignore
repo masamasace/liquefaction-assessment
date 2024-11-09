@@ -1,6 +1,5 @@
-# Ignore all XML files, case-insensitive
 *.xml
 *.XML
 *.pdf
-main.py
 .pyc
+main.py
