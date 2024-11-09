@@ -22,15 +22,7 @@ class LoadData:
                 self.data = self._load_xlsx()
 
     # load data from xml file            
-    def _load_xml(self):
-        
-        # read header info including xml version, encoding, etc.
-        header = []
-        with open(self.params["path"], "r") as f:
-            header.append(f.readline())
-
-        xml_version = header[0].split(" ")[1].split("=")[1].replace('"', "")
-        xml_encoding = header[0].split(" ")[2].split("=")[1].replace('"', "").replace("?>", "").replace("\n", "").lower()
+    def _load_xml(self, xml_encoding = "shift-jis"):
         
         # read xml data
         parser = ET.XMLParser(encoding=xml_encoding)

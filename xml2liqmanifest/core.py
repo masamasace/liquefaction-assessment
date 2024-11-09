@@ -1,6 +1,7 @@
 from pathlib import Path
 from .load import LoadData, CheckMethodParam
 from .calc import CalculateFL
+from .merge import MergeSoilLayerIntoSPT
 import pandas as pd
 
 
@@ -10,6 +11,8 @@ class LiquefactionManifest:
         
         self.params = {
             "is_loaded": False,
+            "is_set_method": False,
+            "is_already_merged_from_soil_layer": False,
         }
         
         self.params["file_path"] = file_path
@@ -32,12 +35,22 @@ class LiquefactionManifest:
         
         self.params["method_params"] = CheckMethodParam(self.params["method"], self.params["method_params"]).get_params()
         
-        print(self.params) 
-        
+        self.params["is_set_method"] = True
+
         return kwargs
+
+    def merge_soil_layer(self):
+
+        self.df_SPT = MergeSoilLayerIntoSPT(self.df_SPT, self.data_from_file.data["soil_layers"]).get_merged_data()
+
+        self.params["is_already_merged_from_soil_layer"] = True
     
     def calculate_FL(self):
-        
+
+        if self.params["is_already_merged_from_soil_layer"] == False:
+            
+            self.merge_soil_layer()
+
         if self.params["method"] not in ["JRA", "AIJ", "Idriss and Boulanger"]:
             raise ValueError("Method are not set or not supported. Please use set_method() to set the method.")
         
