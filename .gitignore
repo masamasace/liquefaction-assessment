@@ -5,3 +5,4 @@
 *.pyc
 main.py
 *misc.py
+__pycache__/
