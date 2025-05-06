@@ -50,3 +50,35 @@
 - CSV や XLSX の読み込み機能の実装  
 - AIJ、Idriss and Boulanger 手法など、追加計算手法の実装  
 - Web UI の機能拡充による操作性の向上
+
+## サンプルプログラム
+
+以下は、モジュールを利用した液状化判定の実行例です。
+
+```python
+# サンプルコード例
+from xml2liqmanifest import LiquefactionManifest
+
+# XMLファイルのパスを指定して初期化
+liq = LiquefactionManifest(r"./ref/01_001474.XML")
+
+# JRA 法に基づくパラメータの設定例
+liq.set_method(
+    method="JRA",
+    params={
+        "year": 2017,
+        "EQ_level": 2,
+        "EQ_type": 1,
+        "is_given_Khgl": False,
+        "Khgl": 0.2,
+        "regional_class": "C",
+        "ground_type": 1
+    }
+)
+
+# 液状化判定計算を実行
+liq.calculate_FL()
+
+# 結果をエクスポート
+results = liq.export_result()
+print("結果:", results)
