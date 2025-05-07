@@ -33,22 +33,27 @@ class LiquefactionManifest:
             "pickle_path": self.temp_dir / f"{Path(file_path).stem}.pkl",
         }
         
-        if force_read_file or not self.data["pickle_path"].exists():
-        
-            print(f"Loading data from {file_path.name}... ", end="")
-            self.data["borehole_data"] = LoadData(file_path).data
-            print("Done.")
-        
-        else:
-            print(f"Loading data from {self.data['pickle_path'].name}... ", end="")
-            with open(self.data["pickle_path"], "rb") as f:
-                self.data = pickle.load(f).data
-            print("Done.")
+        self._read_file(file_path, force_read_file, self.data["pickle_path"])
         
         # save class instance by pickle
         self._save_pickle()
         
         return None
+
+    def _read_file(self, file_path, force_read_file, pickle_path):
+        
+        if force_read_file or not pickle_path.exists():
+            
+            print(f"Loading data from {file_path.name}... ", end="")
+            self.data["borehole_data"] = LoadData(file_path).data
+            print("Done.")
+            
+        else:
+            print(f"Loading data from {pickle_path.name}... ", end="")
+            with open(pickle_path, "rb") as f:
+                self.data = pickle.load(f).data
+            print("Done.")
+            
 
     def _save_pickle(self):
         
@@ -61,31 +66,29 @@ class LiquefactionManifest:
     # JRA, AIJ, Idriss and Boulanger, etc. 
     def set_method(self, **kwargs):
         
+        self._read_file(self.data["file_path"], False, self.data["pickle_path"])
+        
         self.data["method"] = kwargs["method"]
         self.data["method_params"] = kwargs["params"]
         
         self.data["method_params"] = CheckMethodParam(self.data["method"], self.data["method_params"]).get_params()
         
-        return kwargs
+        self._save_pickle()
+        
+        return None
 
     def merge_soil_layer(self):
+        
+        self._read_file(self.data["file_path"], False, self.data["pickle_path"])
 
-        self.df_SPT = MergeSoilLayerIntoSPT(self.df_SPT, self.data_from_file.data["soil_layers"]).get_merged_data()
+        self.data = MergeSoilLayerIntoSPT(self.data).get_merged_data()
+        
+        self._save_pickle()
 
-        self.data["is_already_merged_from_soil_layer"] = True
     
     def calculate_FL(self):
 
-        if self.data["is_already_merged_from_soil_layer"] == False:
-            
-            self.merge_soil_layer()
-
-        if self.data["method"] not in ["JRA", "AIJ", "Idriss and Boulanger"]:
-            raise ValueError("Method are not set or not supported. Please use set_method() to set the method.")
-        
-        self.df_SPT = CalculateFL(self.df_SPT, self.data).get_FL()
-                
-        return None
+        pass
     
     def export_result(self):
             
