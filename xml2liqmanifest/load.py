@@ -551,8 +551,6 @@ class CheckMethodParam:
             
             self.params["params"]["Khgl"] = Khgl0_list[LT_index][self.params["params"]["ground_type"]-1] * Coeffs_list[regional_class_index][LT_index]
             
-            print("Khgl:", self.params["params"]["Khgl"])
-            
             return self.params["params"]
     
         elif self.params["params"]["year"] == 2002:
